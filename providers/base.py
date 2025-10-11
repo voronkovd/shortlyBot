@@ -54,9 +54,10 @@ class BaseProvider(ABC):
                 )
             },
         }
-        # cookiefile = os.getenv("YTDLP_COOKIES_FILE")
-        # if cookiefile and os.path.exists(cookiefile):
-        #     opts["cookiefile"] = cookiefile
+
+        cookiefile = os.getenv("YTDLP_COOKIES_FILE")
+        if cookiefile and os.path.exists(cookiefile):
+            opts["cookiefile"] = cookiefile
         return opts
 
     def download_video(
