@@ -1,0 +1,136 @@
+name: Dependencies Check
+
+on:
+  schedule:
+    # Run every Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Check for outdated packages
+      run: |
+        pip list --outdated --format=columns
+
+    - name: Security check with safety
+      run: |
+        pip install safety
+        safety check
+
+    - name: Check for known vulnerabilities
+      run: |
+        pip install bandit
+        bandit -r . -f json -o bandit-report.json || true
+        cat bandit-report.json
+
+    - name: Create issue if vulnerabilities found
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          let banditReport = {};
+          try {
+            banditReport = JSON.parse(fs.readFileSync('bandit-report.json', 'utf8'));
+          } catch (e) {
+            console.log('No bandit report found');
+          }
+          
+          const vulnerabilities = banditReport.results || [];
+          
+          if (vulnerabilities.length > 0) {
+            const issueBody = `
+            ## 🚨 Security Vulnerabilities Found
+            
+            The dependency check found ${vulnerabilities.length} potential security issues:
+            
+            ${vulnerabilities.map(v => `- **${v.test_name}** (${v.severity}): ${v.issue_text}`).join('\n')}
+            
+            Please review and update dependencies as needed.
+            
+            Generated on: ${new Date().toISOString()}
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Security vulnerabilities detected in dependencies',
+              body: issueBody,
+              labels: ['security', 'dependencies', 'automated']
+            });
+          }
+
+  update-dependencies:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install pip-tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-tools
+
+    - name: Update requirements
+      run: |
+        # Create a temporary requirements.in file
+        echo "python-telegram-bot>=22.5" > requirements.in
+        echo "python-dotenv>=1.1.1" >> requirements.in
+        echo "yt-dlp>=2025.9.26" >> requirements.in
+        echo "pika>=1.3.2" >> requirements.in
+        echo "pytest>=8.4.2" >> requirements.in
+        echo "pytest-asyncio>=1.2.0" >> requirements.in
+        echo "pytest-cov>=7.0.0" >> requirements.in
+        echo "pytest-mock>=3.15.1" >> requirements.in
+        
+        # Generate updated requirements.txt
+        pip-compile requirements.in --upgrade
+        
+        # Show the diff
+        echo "Updated requirements:"
+        cat requirements.txt
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update dependencies'
+        title: 'chore: update dependencies'
+        body: |
+          ## 🔄 Dependency Updates
+          
+          This PR updates the project dependencies to their latest versions.
+          
+          ### Changes:
+          - Updated all dependencies to latest compatible versions
+          - Maintained version constraints for stability
+          
+          ### Testing:
+          - [ ] All tests pass
+          - [ ] No breaking changes detected
+          - [ ] Security scan clean
+        branch: update-dependencies
+        delete-branch: true
