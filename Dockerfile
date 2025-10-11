@@ -4,11 +4,13 @@ FROM python:3.13-slim
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Устанавливаем системные зависимости
-RUN apt-get update && apt-get install -y \
+# 👇 Системные зависимости + ffmpeg (и чистка кэша)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    ca-certificates \
     gcc \
     g++ \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
 # Копируем файл зависимостей
 COPY requirements.txt .

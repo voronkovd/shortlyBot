@@ -165,3 +165,6 @@ demo_localization.py
 # Test artifacts
 test_results/
 .pytest_cache/
+
+secrets/
+*cookies*.txt
