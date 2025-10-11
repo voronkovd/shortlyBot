@@ -2,12 +2,13 @@ import re
 from urllib.parse import urlparse
 from providers.base import BaseProvider
 
+
 class InstagramProvider(BaseProvider):
     platform = "instagram"
     PATTERNS = [
-        ("post",  r"instagram\.com/p/([^/]+)"),
-        ("reel",  r"instagram\.com/reel/([^/]+)"),
-        ("tv",    r"instagram\.com/tv/([^/]+)"),
+        ("post", r"instagram\.com/p/([^/]+)"),
+        ("reel", r"instagram\.com/reel/([^/]+)"),
+        ("tv", r"instagram\.com/tv/([^/]+)"),
         ("story", r"instagram\.com/stories/[^/]+/([^/]+)"),
     ]
 
@@ -18,7 +19,9 @@ class InstagramProvider(BaseProvider):
             if not host.endswith("instagram.com"):
                 return False
             clean = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-            return any(re.search(pat, clean, flags=re.IGNORECASE) for _, pat in self.PATTERNS)
+            return any(
+                re.search(pat, clean, flags=re.IGNORECASE) for _, pat in self.PATTERNS
+            )
         except Exception:
             return False
 

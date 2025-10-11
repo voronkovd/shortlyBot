@@ -27,12 +27,10 @@ class BaseProvider(ABC):
         return None
 
     @abstractmethod
-    def is_valid_url(self, url: str) -> bool:
-        ...
+    def is_valid_url(self, url: str) -> bool: ...
 
     @abstractmethod
-    def _build_url(self, kind: str, ident: str) -> str:
-        ...
+    def _build_url(self, kind: str, ident: str) -> str: ...
 
     def _yt_opts(self, temp_dir: str) -> Dict:
         opts = {
@@ -61,13 +59,17 @@ class BaseProvider(ABC):
         #     opts["cookiefile"] = cookiefile
         return opts
 
-    def download_video(self, ref: Union[str, KindId]) -> Tuple[Optional[bytes], Optional[str]]:
+    def download_video(
+        self, ref: Union[str, KindId]
+    ) -> Tuple[Optional[bytes], Optional[str]]:
         if isinstance(ref, tuple):
             kind, ident = ref
         else:
             kind, ident = "post", ref  # дефолт
 
-        platform_name = self.platform or self.__class__.__name__.replace("Downloader", "").lower()
+        platform_name = (
+            self.platform or self.__class__.__name__.replace("Downloader", "").lower()
+        )
         logger.info(f"🔍 Starting {platform_name} {kind} download for ID: {ident}")
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -80,12 +82,16 @@ class BaseProvider(ABC):
                     info = ydl.extract_info(url, download=False)
                     if not info:
                         raise RuntimeError("Failed to get video information")
-                    logger.info(f"Title: {info.get('title')!r}, duration: {info.get('duration')}")
+                    logger.info(
+                        f"Title: {info.get('title')!r}, duration: {info.get('duration')}"
+                    )
 
                     try:
                         ydl.download([url])
                     except Exception as format_error:
-                        logger.warning(f"Format error: {format_error} → fallback to 'best'")
+                        logger.warning(
+                            f"Format error: {format_error} → fallback to 'best'"
+                        )
                         ydl_opts["format"] = "best"
                         with yt_dlp.YoutubeDL(ydl_opts) as ydl2:
                             ydl2.download([url])
@@ -97,7 +103,9 @@ class BaseProvider(ABC):
                     raise RuntimeError("Video file not found after download")
 
                 video_file = max(files, key=lambda p: os.path.getsize(p))
-                logger.info(f"📁 Selected file: {os.path.basename(video_file)} ({os.path.getsize(video_file)} bytes)")
+                logger.info(
+                    f"📁 Selected file: {os.path.basename(video_file)} ({os.path.getsize(video_file)} bytes)"
+                )
 
                 with open(video_file, "rb") as f:
                     data = f.read()

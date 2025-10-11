@@ -5,10 +5,11 @@ from localization.utils import t
 
 logger = logging.getLogger(__name__)
 
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     logger.info(f"❓ User {user.id} requested help")
-    
+
     help_text = f"""
 📖 {t('help_title', user=user)}
 
@@ -49,5 +50,5 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 {t('help_start', user=user)}
 {t('help_help', user=user)}
     """
-    
+
     await update.message.reply_text(help_text)

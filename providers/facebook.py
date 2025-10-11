@@ -2,13 +2,14 @@ import re
 from urllib.parse import urlparse
 from providers.base import BaseProvider
 
+
 class FacebookProvider(BaseProvider):
     platform = "facebook"
     PATTERNS = [
-        ("reel",   r"facebook\.com/reel/(\d+)"),
-        ("watch",  r"facebook\.com/.+?/videos/(\d+)"),
-        ("short",  r"fb\.watch/([^/?#]+)"),
-        ("watch",  r"facebook\.com/watch/\?v=(\d+)"),
+        ("reel", r"facebook\.com/reel/(\d+)"),
+        ("watch", r"facebook\.com/.+?/videos/(\d+)"),
+        ("short", r"fb\.watch/([^/?#]+)"),
+        ("watch", r"facebook\.com/watch/\?v=(\d+)"),
     ]
 
     def is_valid_url(self, url: str) -> bool:
@@ -19,7 +20,9 @@ class FacebookProvider(BaseProvider):
             if not valid:
                 return False
             clean = url.split("?", 1)[0].split("#", 1)[0]
-            return any(re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS)
+            return any(
+                re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS
+            )
         except Exception:
             return False
 
