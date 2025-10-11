@@ -6,8 +6,13 @@ import time
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import (Application, CommandHandler, ContextTypes,
-                          MessageHandler, filters)
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from analytics.stats_collector import stats_collector
 from commands.help import help_command
