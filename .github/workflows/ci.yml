@@ -195,18 +195,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -e
-            mkdir -p ~/shortlybot
             cd ~/shortlybot
-            cat > docker-compose.yml <<'YAML'
-            services:
-              shortlybot:
-                image: ghcr.io/${{ github.repository_owner }}/${{ env.PACKAGE_NAME }}:latest
-                container_name: shortlybot
-                restart: unless-stopped
-                environment:
-                  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-            YAML
             export TELEGRAM_BOT_TOKEN='${{ secrets.TELEGRAM_BOT_TOKEN }}'
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker compose pull
