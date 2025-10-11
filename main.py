@@ -20,11 +20,28 @@ from commands.start import start_command
 from handlers.downloader import Downloader
 from localization.utils import t
 
-load_dotenv()
+def setup_logging() -> None:
+    # Читаем уровень из окружения, по умолчанию — ERROR (т.е. только ошибки и выше)
+    level_name = os.getenv("LOG_LEVEL", "ERROR").upper()
+    level = getattr(logging, level_name, logging.ERROR)
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=level,
+    )
+
+    # Урезаем шум от сторонних библиотек
+    for noisy in (
+        "httpx",           # используется python-telegram-bot
+        "telegram",        # внутренние логи PTB
+        "urllib3",
+        "asyncio",
+        "yt_dlp",
+        "pika",
+    ):
+        logging.getLogger(noisy).setLevel(max(level, logging.ERROR if level < logging.ERROR else level))
+
+setup_logging()
 logger = logging.getLogger(__name__)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")

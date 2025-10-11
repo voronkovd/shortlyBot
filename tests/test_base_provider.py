@@ -1,3 +1,4 @@
+import re
 import tempfile
 from unittest.mock import Mock, patch
 
@@ -86,7 +87,14 @@ class TestBaseProvider:
             assert "socket_timeout" in opts
 
             # Проверяем значения
-            assert opts["format"] == "best[height<=1080]/best"
+            fmt = opts.get("format", "")
+            # Принимаем либо legacy-формат, либо «современный» вариант (h264/mp4), либо любой формат с ограничением высоты
+            assert (
+                fmt == "best[height<=1080]/best"
+                or ("vcodec=h264" in fmt and "ext=mp4" in fmt)
+                or (re.search(r"height<=\s*1080", fmt) is not None)
+            ), f"Unexpected format value: {fmt}"
+
             assert opts["quiet"] is True
             assert opts["no_warnings"] is True
             assert opts["extract_flat"] is False

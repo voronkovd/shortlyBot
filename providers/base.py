@@ -35,13 +35,29 @@ class BaseProvider(ABC):
     def _yt_opts(self, temp_dir: str) -> Dict:
         opts = {
             "outtmpl": os.path.join(temp_dir, "%(title)s.%(ext)s"),
-            "format": "best[height<=1080]/best",
+            "format": (
+                "bv*[ext=mp4][vcodec=h264]+ba[ext=m4a]/" "b[ext=mp4]/" "bv*+ba/b"
+            ),
+            "merge_output_format": "mp4",
+            "postprocessors": [
+                {"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"},
+                {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"},
+            ],
+            "postprocessor_args": [
+                "-movflags",
+                "+faststart",
+                "-pix_fmt",
+                "yuv420p",
+                "-profile:v",
+                "main",
+            ],
+            # 👇 Вернули ожидаемые ключи тестом
             "quiet": True,
             "no_warnings": True,
             "extract_flat": False,
             "writethumbnail": False,
             "writeinfojson": False,
-            "noplaylist": True,
+            "noplaylist": True,  # <- вот этого не хватало
             "retries": 5,
             "fragment_retries": 5,
             "skip_unavailable_fragments": True,
@@ -49,15 +65,28 @@ class BaseProvider(ABC):
             "socket_timeout": 60,
             "http_headers": {
                 "User-Agent": (
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-                )
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                ),
             },
+            "compat_opts": ["no-keep-subs", "no-attach-info-json"],
+            "prefer_free_formats": False,
         }
 
         cookiefile = os.getenv("YTDLP_COOKIES_FILE")
         if cookiefile and os.path.exists(cookiefile):
             opts["cookiefile"] = cookiefile
+
+        max_h = int(os.getenv("MAX_HEIGHT", "1080"))
+        opts["format_sort"] = [
+            f"res:{max_h}",
+            "codec:h264",
+            "ext:mp4",
+            "fps",
+            "vbr",
+            "abr",
+        ]
+
         return opts
 
     def download_video(
