@@ -1,12 +1,13 @@
 import logging
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
+
 from providers.base import BaseProvider
+from providers.facebook import FacebookProvider
 from providers.instagram import InstagramProvider
+from providers.likee import LikeeProvider
+from providers.rutube import RuTubeProvider
 from providers.tiktok import TikTokProvider
 from providers.youtube import YouTubeProvider
-from providers.likee import LikeeProvider
-from providers.facebook import FacebookProvider
-from providers.rutube import RuTubeProvider
 
 logger = logging.getLogger(__name__)
 

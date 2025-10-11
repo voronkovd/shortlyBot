@@ -3,8 +3,10 @@
 """
 
 from typing import Optional
+
 from telegram import User
-from .translations import get_user_language, get_text
+
+from .translations import get_text, get_user_language
 
 
 def get_user_lang(user: Optional[User]) -> str:

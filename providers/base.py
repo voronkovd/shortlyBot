@@ -1,10 +1,10 @@
 import glob
+import logging
 import os
 import re
-import logging
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, List, Union, Dict
+from typing import Dict, List, Optional, Tuple, Union
 
 import yt_dlp
 

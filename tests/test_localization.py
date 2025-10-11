@@ -3,7 +3,9 @@
 """
 
 from unittest.mock import Mock
-from localization.translations import get_user_language, get_text, DEFAULT_LANGUAGES
+
+from localization.translations import (DEFAULT_LANGUAGES, get_text,
+                                       get_user_language)
 from localization.utils import get_user_lang, t
 
 

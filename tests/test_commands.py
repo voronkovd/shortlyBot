@@ -1,10 +1,11 @@
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
-from telegram import Update, User, Message
+from telegram import Message, Update, User
 from telegram.ext import ContextTypes
 
-from commands.start import start_command
 from commands.help import help_command
+from commands.start import start_command
 
 
 class TestStartCommand:

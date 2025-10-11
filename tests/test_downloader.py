@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
+
 from handlers.downloader import Downloader
 from providers.base import BaseProvider
 

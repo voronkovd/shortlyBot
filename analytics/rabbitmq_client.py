@@ -1,8 +1,9 @@
-import os
 import json
 import logging
-from typing import Dict, Any, Optional
+import os
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
 import pika
 from pika.exceptions import AMQPConnectionError
 

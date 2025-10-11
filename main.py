@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
-import os
-import logging
 import asyncio
+import logging
+import os
 import time
-from telegram import Update
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ContextTypes,
-)
-from dotenv import load_dotenv
 
-from commands.start import start_command
-from commands.help import help_command
-from handlers.downloader import Downloader
+from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import (Application, CommandHandler, ContextTypes,
+                          MessageHandler, filters)
+
 from analytics.stats_collector import stats_collector
+from commands.help import help_command
+from commands.start import start_command
+from handlers.downloader import Downloader
 from localization.utils import t
 
 load_dotenv()

@@ -1,6 +1,8 @@
 import logging
+
 from telegram import Update
 from telegram.ext import ContextTypes
+
 from localization.utils import t
 
 logger = logging.getLogger(__name__)

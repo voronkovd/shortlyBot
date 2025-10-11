@@ -1,6 +1,7 @@
-import time
 import logging
+import time
 from typing import Optional
+
 from .rabbitmq_client import rabbitmq_client
 
 logger = logging.getLogger(__name__)

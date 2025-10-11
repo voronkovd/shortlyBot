@@ -1,6 +1,8 @@
-import pytest
 import tempfile
 from unittest.mock import Mock, patch
+
+import pytest
+
 from providers.base import BaseProvider
 
 
