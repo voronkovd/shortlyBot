@@ -1,4 +1,5 @@
 import glob
+import shutil
 import logging
 import os
 import re
@@ -73,9 +74,17 @@ class BaseProvider(ABC):
             "prefer_free_formats": False,
         }
 
-        cookiefile = os.getenv("YTDLP_COOKIES_FILE")
-        if cookiefile and os.path.exists(cookiefile):
-            opts["cookiefile"] = cookiefile
+        cookie_src = os.getenv("YTDLP_COOKIES_FILE_RUNTIME") or os.getenv(
+            "YTDLP_COOKIES_FILE"
+        )
+        if cookie_src and os.path.exists(cookie_src):
+            try:
+                cookie_dst = os.path.join(temp_dir, "yt_cookies.txt")
+                shutil.copyfile(cookie_src, cookie_dst)
+                os.chmod(cookie_dst, 0o600)
+                opts["cookiefile"] = cookie_dst
+            except Exception as e:
+                logger.warning(f"Cannot prepare cookiefile: {e}")
 
         max_h = int(os.getenv("MAX_HEIGHT", "1080"))
         opts["format_sort"] = [
