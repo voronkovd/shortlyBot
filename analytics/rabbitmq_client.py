@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 import pika
-from pika.exceptions import AMQPConnectionError, AMQPChannelError
+from pika.exceptions import AMQPConnectionError
 
 logger = logging.getLogger(__name__)
 

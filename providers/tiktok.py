@@ -15,7 +15,7 @@ class TikTokProvider(BaseProvider):
         try:
             parsed = urlparse(url)
             host = (parsed.netloc or "").lower()
-            if not ("tiktok.com" in host):
+            if "tiktok.com" not in host:
                 return False
             clean = url.split("?", 1)[0].split("#", 1)[0]
             return any(re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS)

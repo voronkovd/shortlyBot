@@ -1,6 +1,6 @@
 import pytest
 import json
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from analytics.rabbitmq_client import RabbitMQClient
 
 

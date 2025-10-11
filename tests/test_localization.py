@@ -2,7 +2,6 @@
 Тесты для системы локализации
 """
 
-import pytest
 from unittest.mock import Mock
 from localization.translations import get_user_language, get_text, DEFAULT_LANGUAGES
 from localization.utils import get_user_lang, t

@@ -1,8 +1,8 @@
 import pytest
 import tempfile
 import os
-from unittest.mock import Mock, patch, MagicMock
-from providers.base import BaseProvider, KindId
+from unittest.mock import Mock, patch
+from providers.base import BaseProvider
 
 
 class ConcreteProvider(BaseProvider):

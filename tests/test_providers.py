@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import Mock, patch
 from providers.instagram import InstagramProvider
 from providers.tiktok import TikTokProvider
 from providers.youtube import YouTubeProvider

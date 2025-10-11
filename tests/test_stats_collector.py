@@ -73,13 +73,13 @@ class TestStatsCollector:
         assert user_stats_call[1]['username'] == username
         assert user_stats_call[1]['action'] == "download_success"
         assert user_stats_call[1]['platform'] == platform
-        assert user_stats_call[1]['success'] == True
+        assert user_stats_call[1]['success']
         
         # Проверяем параметры статистики провайдера
         provider_stats_call = mock_rabbitmq_client.send_provider_stats.call_args
         assert provider_stats_call[1]['platform'] == platform
         assert provider_stats_call[1]['action'] == "download_success"
-        assert provider_stats_call[1]['success'] == True
+        assert provider_stats_call[1]['success']
         assert provider_stats_call[1]['video_size'] == video_size
         assert provider_stats_call[1]['processing_time'] == processing_time
     
@@ -101,12 +101,12 @@ class TestStatsCollector:
         # Проверяем параметры пользовательской статистики
         user_stats_call = mock_rabbitmq_client.send_user_stats.call_args
         assert user_stats_call[1]['action'] == "download_failed"
-        assert user_stats_call[1]['success'] == False
+        assert user_stats_call[1]['success']
         
         # Проверяем параметры статистики провайдера
         provider_stats_call = mock_rabbitmq_client.send_provider_stats.call_args
         assert provider_stats_call[1]['action'] == "download_failed"
-        assert provider_stats_call[1]['success'] == False
+        assert provider_stats_call[1]['success']
         assert provider_stats_call[1]['processing_time'] == processing_time
         
         # Проверяем параметры события бота
