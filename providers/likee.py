@@ -1,6 +1,8 @@
 import re
 from urllib.parse import urlparse
+
 from providers.base import BaseProvider
+
 
 class LikeeProvider(BaseProvider):
     platform = "likee"
@@ -17,7 +19,9 @@ class LikeeProvider(BaseProvider):
             if not (host.endswith("likee.video") or host.endswith("likee.com")):
                 return False
             clean = url.split("?", 1)[0].split("#", 1)[0]
-            return any(re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS)
+            return any(
+                re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS
+            )
         except Exception:
             return False
 

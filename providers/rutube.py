@@ -1,13 +1,15 @@
 import re
 from urllib.parse import urlparse
+
 from providers.base import BaseProvider
+
 
 class RuTubeProvider(BaseProvider):
     platform = "rutube"
     PATTERNS = [
-        ("video",  r"rutube\.ru/video/([a-f0-9\-]{8,})"),
-        ("embed",  r"rutube\.ru/(?:play|video)/embed/(\d+)"),
-        ("video",  r"rutube\.ru/video/(\d+)"),
+        ("video", r"rutube\.ru/video/([a-f0-9\-]{8,})"),
+        ("embed", r"rutube\.ru/(?:play|video)/embed/(\d+)"),
+        ("video", r"rutube\.ru/video/(\d+)"),
         ("shorts", r"rutube\.ru/shorts/([a-f0-9]{32})"),
     ]
 
@@ -18,7 +20,9 @@ class RuTubeProvider(BaseProvider):
             if not host.endswith("rutube.ru"):
                 return False
             clean = url.split("?", 1)[0].split("#", 1)[0]
-            return any(re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS)
+            return any(
+                re.search(p, clean, flags=re.IGNORECASE) for _, p in self.PATTERNS
+            )
         except Exception:
             return False
 

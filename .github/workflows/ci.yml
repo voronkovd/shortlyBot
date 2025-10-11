@@ -41,7 +41,7 @@ jobs:
         run: black --check --diff .
 
       - name: isort (check)
-        run: isort --check-only --diff .
+        run: isort --check-only --diff --profile black .
 
   test:
     runs-on: ubuntu-latest

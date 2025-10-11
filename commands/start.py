@@ -1,6 +1,8 @@
 import logging
+
 from telegram import Update
 from telegram.ext import ContextTypes
+
 from localization.utils import t
 
 logger = logging.getLogger(__name__)
@@ -9,9 +11,9 @@ logger = logging.getLogger(__name__)
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     logger.info(f"👤 User {user.id} (@{user.username}) started the bot")
-    
-    name = user.first_name if user.first_name else t('user', user=user)
-    
+
+    name = user.first_name if user.first_name else t("user", user=user)
+
     welcome_text = f"""
 🎬 {t('start_welcome', user=user, name=name)}
 
@@ -29,5 +31,5 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 ❓ {t('start_help', user=user)}
     """
-    
+
     await update.message.reply_text(welcome_text)
