@@ -42,7 +42,7 @@ class BaseProvider(ABC):
             "merge_output_format": "mp4",
             # Достаточно ремакса в MP4; конвертер обычно не нужен
             "postprocessors": [
-                {"key": "FFmpegVideoRemuxer", "preferredformat": "mp4"},
+                {"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"},
             ],
             # Аргументы для финального вызова ffmpeg (на выход)
             "postprocessor_args": {
