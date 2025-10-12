@@ -36,44 +36,50 @@ class BaseProvider(ABC):
     def _yt_opts(self, temp_dir: str) -> Dict:
         opts = {
             "outtmpl": os.path.join(temp_dir, "%(title)s.%(ext)s"),
-            "format": (
-                "bv*[ext=mp4][vcodec=h264]+ba[ext=m4a]/" "b[ext=mp4]/" "bv*+ba/b"
-            ),
+            # Приоритет: H.264 MP4 → готовый MP4 → любой best
+            "format": "bv*[ext=mp4][vcodec=h264]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b",
+            # Объединяем дорожки и оставляем mp4-контейнер
             "merge_output_format": "mp4",
+            # Достаточно ремакса в MP4; конвертер обычно не нужен
             "postprocessors": [
-                {"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"},
-                {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"},
+                {"key": "FFmpegVideoRemuxer", "preferredformat": "mp4"},
             ],
-            "postprocessor_args": [
-                "-movflags",
-                "+faststart",
-                "-pix_fmt",
-                "yuv420p",
-                "-profile:v",
-                "main",
-            ],
-            # 👇 Вернули ожидаемые ключи тестом
+            # Аргументы для финального вызова ffmpeg (на выход)
+            "postprocessor_args": {
+                "ffmpeg_o": [
+                    "-movflags",
+                    "+faststart",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-profile:v",
+                    "main",
+                ]
+            },
+            # Тихий режим + ожидаемые тестом ключи
             "quiet": True,
             "no_warnings": True,
             "extract_flat": False,
             "writethumbnail": False,
             "writeinfojson": False,
-            "noplaylist": True,  # <- вот этого не хватало
+            "noplaylist": True,
             "retries": 5,
             "fragment_retries": 5,
             "skip_unavailable_fragments": True,
             "concurrent_fragment_downloads": 1,
             "socket_timeout": 60,
+            "windowsfilenames": True,
             "http_headers": {
                 "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/126.0.0.0 Safari/537.36"
                 ),
             },
             "compat_opts": ["no-keep-subs", "no-attach-info-json"],
             "prefer_free_formats": False,
         }
 
+        # Куки: копируем в temp, чтобы не трогать ro-монты
         cookie_src = os.getenv("YTDLP_COOKIES_FILE_RUNTIME") or os.getenv(
             "YTDLP_COOKIES_FILE"
         )
@@ -86,6 +92,7 @@ class BaseProvider(ABC):
             except Exception as e:
                 logger.warning(f"Cannot prepare cookiefile: {e}")
 
+        # Сортировка форматов: сначала по высоте, потом кодек/контейнер/качество
         max_h = int(os.getenv("MAX_HEIGHT", "1080"))
         opts["format_sort"] = [
             f"res:{max_h}",
