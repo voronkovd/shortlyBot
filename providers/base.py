@@ -46,14 +46,7 @@ class BaseProvider(ABC):
             ],
             # Аргументы для финального вызова ffmpeg (на выход)
             "postprocessor_args": {
-                "ffmpeg_o": [
-                    "-movflags",
-                    "+faststart",
-                    "-pix_fmt",
-                    "yuv420p",
-                    "-profile:v",
-                    "main",
-                ]
+                "ffmpeg_o": ["-movflags", "+faststart"],
             },
             # Тихий режим + ожидаемые тестом ключи
             "quiet": True,
