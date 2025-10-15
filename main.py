@@ -116,13 +116,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 user.id, user.username, platform, len(video_data), processing_time
             )
 
-            # Удаляем исходное сообщение с ссылкой после успешной отправки видео
+            # Удаляем сообщения после успешной отправки видео
             try:
+                # Удаляем исходное сообщение с ссылкой
                 await update.message.delete()
                 logger.info(f"Original message deleted for user {user.id}")
+
+                # Удаляем сообщение "Отправляю видео..."
+                await processing_msg.delete()
+                logger.info(f"Processing message deleted for user {user.id}")
             except Exception as delete_error:
                 logger.warning(
-                    f"Failed to delete original message for user {user.id}: {delete_error}"
+                    f"Failed to delete messages for user {user.id}: {delete_error}"
                 )
 
             logger.info(f"Video successfully sent to user {user.id}")

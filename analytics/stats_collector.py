@@ -8,13 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class StatsCollector:
-    """Коллектор статистики для бота"""
 
     def __init__(self):
         self.rabbitmq = rabbitmq_client
 
     def track_user_request(self, user_id: int, username: str, platform: str):
-        """Отслеживает запрос пользователя на скачивание"""
         try:
             self.rabbitmq.send_user_stats(
                 user_id=user_id,
@@ -35,7 +33,6 @@ class StatsCollector:
         video_size: int,
         processing_time: float,
     ):
-        """Отслеживает успешное скачивание"""
         try:
             # Статистика пользователя
             self.rabbitmq.send_user_stats(
@@ -70,9 +67,7 @@ class StatsCollector:
         error_message: str,
         processing_time: Optional[float] = None,
     ):
-        """Отслеживает неудачное скачивание"""
         try:
-            # Статистика пользователя
             self.rabbitmq.send_user_stats(
                 user_id=user_id,
                 username=username or "unknown",
@@ -81,7 +76,6 @@ class StatsCollector:
                 success=False,
             )
 
-            # Статистика провайдера
             self.rabbitmq.send_provider_stats(
                 platform=platform,
                 action="download_failed",
@@ -89,7 +83,6 @@ class StatsCollector:
                 processing_time=processing_time,
             )
 
-            # Общее событие с ошибкой
             self.rabbitmq.send_bot_event(
                 "download_error",
                 {
@@ -108,7 +101,6 @@ class StatsCollector:
             logger.error(f"Failed to track download failure: {e}")
 
     def track_provider_attempt(self, platform: str):
-        """Отслеживает попытку использования провайдера"""
         try:
             self.rabbitmq.send_provider_stats(
                 platform=platform, action="download_attempt", success=True
@@ -118,7 +110,6 @@ class StatsCollector:
             logger.error(f"Failed to track provider attempt: {e}")
 
     def track_bot_start(self):
-        """Отслеживает запуск бота"""
         try:
             self.rabbitmq.send_bot_event("bot_started", {"timestamp": time.time()})
             logger.info("Tracked bot start")
@@ -126,7 +117,6 @@ class StatsCollector:
             logger.error(f"Failed to track bot start: {e}")
 
     def track_bot_stop(self):
-        """Отслеживает остановку бота"""
         try:
             self.rabbitmq.send_bot_event("bot_stopped", {"timestamp": time.time()})
             logger.info("Tracked bot stop")
@@ -134,5 +124,4 @@ class StatsCollector:
             logger.error(f"Failed to track bot stop: {e}")
 
 
-# Глобальный экземпляр коллектора
 stats_collector = StatsCollector()
