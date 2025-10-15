@@ -15,10 +15,20 @@ class TestRabbitMQClient:
             # Мокаем соединение и канал
             mock_connection = Mock()
             mock_channel = Mock()
-            mock_connection.is_closed = False
-            mock_pika.BlockingConnection.return_value = mock_connection
-            mock_connection.channel.return_value = mock_channel
 
+            # Состояния
+            mock_connection.is_closed = False
+            mock_channel.is_closed = False
+
+            # Методы канала, которые вызываются клиентом
+            mock_connection.channel.return_value = mock_channel
+            mock_channel.queue_declare = Mock()
+            mock_channel.basic_publish = Mock(
+                return_value=True
+            )  # важно для "publish confirmed"
+            mock_channel.confirm_delivery = Mock(return_value=None)
+
+            mock_pika.BlockingConnection.return_value = mock_connection
             yield mock_pika, mock_connection, mock_channel
 
     @pytest.fixture
@@ -37,7 +47,8 @@ class TestRabbitMQClient:
                 "RMQ_CONNECT_MAX_TRIES": "1",
             },
         ):
-            client = RabbitMQClient()
+            # чтобы не дёргать реальное подключение в __init__
+            client = RabbitMQClient(autoconnect=False)
             client.connection = mock_connection
             client.channel = mock_channel
             return client
@@ -57,7 +68,7 @@ class TestRabbitMQClient:
                 "RMQ_CONNECT_MAX_TRIES": "1",
             },
         ):
-            client = RabbitMQClient()
+            client = RabbitMQClient(autoconnect=True)
 
             # Проверяем, что соединение установлено
             assert client.connection is not None
@@ -83,7 +94,7 @@ class TestRabbitMQClient:
         ):
             client = RabbitMQClient(autoconnect=True)
 
-            # Проверяем, что соединение не установлено
+            # Проверяем, что соединение не установлено (клиент не завис)
             assert client.connection is None
             assert client.channel is None
 
@@ -128,16 +139,21 @@ class TestRabbitMQClient:
         assert message_body["success"] == success
         assert "timestamp" in message_body
 
-    def test_send_user_stats_no_connection(self):
+    def test_send_user_stats_no_connection(self, mock_pika):
         """Тест отправки статистики без соединения"""
-        client = RabbitMQClient()
-        client.connection = None
-        client.channel = None
+        # создаём клиента без автоподключения и без канала
+        with patch.dict(
+            "os.environ",
+            {"RMQ_CONNECT_MAX_TRIES": "1"},
+        ):
+            client = RabbitMQClient(autoconnect=False)
+            client.connection = None
+            client.channel = None
 
-        # Не должно вызывать исключение
-        client.send_user_stats(
-            12345, "test_user", "download_request", "instagram", True
-        )
+            # Не должно вызывать исключение
+            client.send_user_stats(
+                12345, "test_user", "download_request", "instagram", True
+            )
 
     def test_send_provider_stats_success(self, rabbitmq_client):
         """Тест успешной отправки статистики провайдера"""
@@ -203,7 +219,7 @@ class TestRabbitMQClient:
 
     def test_close_no_connection(self):
         """Тест закрытия соединения когда его нет"""
-        client = RabbitMQClient()
+        client = RabbitMQClient(autoconnect=False)
         client.connection = None
 
         # Не должно вызывать исключение
