@@ -20,26 +20,33 @@ permissions:
 
 jobs:
   lint:
-    # Линтим на PR и на push в develop; на push в main — не запускаем
+    # Линт только на PR и push в develop
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: ${{ env.PYTHON_DEFAULT }} }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+
       - name: Install linters
         run: |
           python -m pip install --upgrade pip
           pip install ruff black isort
+
       - name: Ruff (lint)
         run: ruff check .
+
       - name: Black (check)
         run: black --check --diff .
+
       - name: isort (check)
         run: isort --check-only --diff --profile black .
 
   test:
-    # Тесты — только на PR и на push в develop
+    # Тесты — на PR и push в develop
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     strategy:
@@ -61,21 +68,30 @@ jobs:
         ports:
           - 5672:5672
           - 15672:15672
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: ${{ matrix.python-version }} }
-      - uses: actions/cache@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/poetry.lock') }}
-          restore-keys: ${{ runner.os }}-pip-${{ matrix.python-version }}-
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f pyproject.toml ]; then pip install .; fi
           pip install pytest pytest-cov
+
       - name: Wait for RabbitMQ
         run: |
           python - <<'PY'
@@ -90,6 +106,7 @@ jobs:
           else:
               raise SystemExit("RabbitMQ not reachable")
           PY
+
       - name: Run tests
         env:
           RABBITMQ_HOST: localhost
@@ -102,41 +119,53 @@ jobs:
           pytest -v \
             --cov=providers --cov=analytics --cov=handlers --cov=commands --cov=localization \
             --cov-report=term-missing --cov-report=xml:coverage.xml
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
 
   security:
-    # Безопасность — на PR и develop; main push пропускаем
+    # Безопасность — на PR и develop
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: ${{ env.PYTHON_DEFAULT }} }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+
       - name: Install security tools
         run: |
           python -m pip install --upgrade pip
           pip install pip-audit bandit
+
       - name: pip-audit (dependencies)
         run: |
           if [ -f requirements.txt ]; then pip-audit --progress-spinner=off --requirement requirements.txt || true; else echo "No requirements.txt"; fi
+
       - name: Bandit (SARIF)
         run: bandit -r . -f sarif -o bandit.sarif || true
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload Bandit SARIF as artifact
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-sarif
           path: bandit.sarif
 
   docker:
-    # Собираем образ только на push в main (без нужды ждать lint/test/security)
+    # Билдим/пушим только на push в main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -146,8 +175,12 @@ jobs:
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
@@ -157,7 +190,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    # Деплой сразу после билда образа на main
+    # Деплой сразу после docker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: docker
     runs-on: ubuntu-latest
@@ -171,6 +204,6 @@ jobs:
           script: |
             cd ~/shortlybot
             export TELEGRAM_BOT_TOKEN='${{ secrets.TELEGRAM_BOT_TOKEN }}'
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker login ghcr.io -u "${{ github.actor }}" -p "${{ secrets.GITHUB_TOKEN }}"
             docker compose pull
             docker compose up -d --remove-orphans
