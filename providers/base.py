@@ -3,8 +3,8 @@ import logging
 import os
 import re
 import shutil
-import tempfile
 import subprocess
+import tempfile
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -23,8 +23,14 @@ def human(n: int) -> str:
     return f"{n:.1f} TB"
 
 
-def compress_to_target(inp: str, outp: str, duration_s: float, target_bytes: int,
-                       max_height: int = 1080, audio_kbps: int = 128) -> None:
+def compress_to_target(
+    inp: str,
+    outp: str,
+    duration_s: float,
+    target_bytes: int,
+    max_height: int = 1080,
+    audio_kbps: int = 128,
+) -> None:
     """
     Сжимает видео до целевого размера (≈ target_bytes) двухпроходным H.264.
     Ставит ограничение по высоте (max_height), сохраняя пропорции.
@@ -49,33 +55,76 @@ def compress_to_target(inp: str, outp: str, duration_s: float, target_bytes: int
     log_prefix = outp + ".2pass"
     # pass 1
     cmd1 = [
-        "ffmpeg", "-y", "-loglevel", "error", "-hide_banner",
-        "-i", inp,
-        "-vf", scale_filter,
-        "-c:v", "libx264", "-b:v", f"{v_kbps}k",
-        "-maxrate", f"{v_kbps}k", "-bufsize", f"{max(v_kbps*2, 500)}k",
-        "-preset", "medium", "-tune", "fastdecode",
-        "-pass", "1", "-passlogfile", log_prefix,
+        "ffmpeg",
+        "-y",
+        "-loglevel",
+        "error",
+        "-hide_banner",
+        "-i",
+        inp,
+        "-vf",
+        scale_filter,
+        "-c:v",
+        "libx264",
+        "-b:v",
+        f"{v_kbps}k",
+        "-maxrate",
+        f"{v_kbps}k",
+        "-bufsize",
+        f"{max(v_kbps*2, 500)}k",
+        "-preset",
+        "medium",
+        "-tune",
+        "fastdecode",
+        "-pass",
+        "1",
+        "-passlogfile",
+        log_prefix,
         "-an",
-        "-f", "mp4",  # пишем в «пустоту», но формат задаём
+        "-f",
+        "mp4",  # пишем в «пустоту», но формат задаём
         os.devnull,
     ]
     # pass 2
     cmd2 = [
-        "ffmpeg", "-y", "-loglevel", "error", "-hide_banner",
-        "-i", inp,
-        "-vf", scale_filter,
-        "-c:v", "libx264", "-b:v", f"{v_kbps}k",
-        "-maxrate", f"{v_kbps}k", "-bufsize", f"{max(v_kbps*2, 500)}k",
-        "-preset", "medium", "-tune", "fastdecode",
-        "-pass", "2", "-passlogfile", log_prefix,
-        "-movflags", "+faststart",
-        "-c:a", "aac", "-b:a", f"{a_kbps}k",
+        "ffmpeg",
+        "-y",
+        "-loglevel",
+        "error",
+        "-hide_banner",
+        "-i",
+        inp,
+        "-vf",
+        scale_filter,
+        "-c:v",
+        "libx264",
+        "-b:v",
+        f"{v_kbps}k",
+        "-maxrate",
+        f"{v_kbps}k",
+        "-bufsize",
+        f"{max(v_kbps*2, 500)}k",
+        "-preset",
+        "medium",
+        "-tune",
+        "fastdecode",
+        "-pass",
+        "2",
+        "-passlogfile",
+        log_prefix,
+        "-movflags",
+        "+faststart",
+        "-c:a",
+        "aac",
+        "-b:a",
+        f"{a_kbps}k",
         outp,
     ]
 
-    logger.info(f"Re-encoding target ≈ {human(target_bytes)} "
-                f"(total ~{total_bps/1000:.0f} kbps; video ~{v_kbps} kbps, audio {a_kbps} kbps)")
+    logger.info(
+        f"Re-encoding target ≈ {human(target_bytes)} "
+        f"(total ~{total_bps/1000:.0f} kbps; video ~{v_kbps} kbps, audio {a_kbps} kbps)"
+    )
 
     try:
         subprocess.run(cmd1, check=True)
@@ -143,7 +192,9 @@ class BaseProvider(ABC):
             "prefer_free_formats": False,
         }
 
-        cookie_src = os.getenv("YTDLP_COOKIES_FILE_RUNTIME") or os.getenv("YTDLP_COOKIES_FILE")
+        cookie_src = os.getenv("YTDLP_COOKIES_FILE_RUNTIME") or os.getenv(
+            "YTDLP_COOKIES_FILE"
+        )
         if cookie_src and os.path.exists(cookie_src):
             try:
                 cookie_dst = os.path.join(temp_dir, "yt_cookies.txt")
@@ -164,13 +215,17 @@ class BaseProvider(ABC):
         ]
         return opts
 
-    def download_video(self, ref: Union[str, KindId]) -> Tuple[Optional[bytes], Optional[str]]:
+    def download_video(
+        self, ref: Union[str, KindId]
+    ) -> Tuple[Optional[bytes], Optional[str]]:
         if isinstance(ref, tuple):
             kind, ident = ref
         else:
             kind, ident = "post", ref
 
-        platform_name = (self.platform or self.__class__.__name__.replace("Downloader", "").lower())
+        platform_name = (
+            self.platform or self.__class__.__name__.replace("Downloader", "").lower()
+        )
         logger.info(f"🔍 Starting {platform_name} {kind} download for ID: {ident}")
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -189,7 +244,9 @@ class BaseProvider(ABC):
                     try:
                         ydl.download([url])
                     except Exception as format_error:
-                        logger.warning(f"Format error: {format_error} → fallback to 'best'")
+                        logger.warning(
+                            f"Format error: {format_error} → fallback to 'best'"
+                        )
                         ydl_opts["format"] = "best"
                         with yt_dlp.YoutubeDL(ydl_opts) as ydl2:
                             ydl2.download([url])
@@ -202,7 +259,9 @@ class BaseProvider(ABC):
 
                 video_file = max(files, key=lambda p: os.path.getsize(p))
                 size = os.path.getsize(video_file)
-                logger.info(f"📁 Selected file: {os.path.basename(video_file)} ({human(size)})")
+                logger.info(
+                    f"📁 Selected file: {os.path.basename(video_file)} ({human(size)})"
+                )
 
                 # --- условное сжатие ---
                 max_size_mb = int(os.getenv("MAX_SIZE_MB", "50"))

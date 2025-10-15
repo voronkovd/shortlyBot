@@ -9,8 +9,8 @@ import pika
 from pika.exceptions import (
     AMQPConnectionError,
     ChannelClosedByBroker,
-    StreamLostError,
     ConnectionClosedByBroker,
+    StreamLostError,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,9 @@ class RabbitMQClient:
             port=self.port,
             virtual_host=self.vhost,
             credentials=credentials,
-            heartbeat=int(os.getenv("RMQ_HEARTBEAT", "30")),        # короче — надёжнее через NAT
+            heartbeat=int(
+                os.getenv("RMQ_HEARTBEAT", "30")
+            ),  # короче — надёжнее через NAT
             blocked_connection_timeout=300,
             connection_attempts=10,
             retry_delay=5,
@@ -58,7 +60,12 @@ class RabbitMQClient:
         backoff = 1.0
         while True:
             try:
-                logger.info("Connecting to RabbitMQ %s:%s vhost=%s", self.host, self.port, self.vhost)
+                logger.info(
+                    "Connecting to RabbitMQ %s:%s vhost=%s",
+                    self.host,
+                    self.port,
+                    self.vhost,
+                )
                 self.connection = pika.BlockingConnection(self._params())
                 self.channel = self.connection.channel()
                 # включаем publisher confirms один раз на канал
@@ -128,7 +135,9 @@ class RabbitMQClient:
                 attempt += 1
                 logger.warning(
                     "Publish failed (attempt %d/%d): %s",
-                    attempt, self.max_publish_retries, e,
+                    attempt,
+                    self.max_publish_retries,
+                    e,
                 )
                 # полная реконнекция перед повтором
                 try:
@@ -140,16 +149,20 @@ class RabbitMQClient:
                 self.channel = None
 
                 if attempt >= self.max_publish_retries:
-                    logger.error("Publish failed permanently after %d attempts", attempt)
+                    logger.error(
+                        "Publish failed permanently after %d attempts", attempt
+                    )
                     return False
 
-                time.sleep(min(2 ** attempt, 15))
+                time.sleep(min(2**attempt, 15))
             except Exception as e:
                 logger.exception("Unexpected publish error: %s", e)
                 return False
 
     # --- публичные методы ---
-    def send_user_stats(self, user_id: int, username: str, action: str, platform: str, success: bool):
+    def send_user_stats(
+        self, user_id: int, username: str, action: str, platform: str, success: bool
+    ):
         msg = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "user_id": user_id,
