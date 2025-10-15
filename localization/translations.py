@@ -1,11 +1,5 @@
-"""
-Переводы для ShortlyBot
-"""
-
-# Словари с переводами
 TRANSLATIONS = {
     "ru": {
-        # Команда /start
         "start_welcome": "Привет, {name}! 👋",
         "start_description": "Я бот для скачивания видео из социальных сетей!",
         "start_supported_platforms": "Поддерживаемые платформы:",
@@ -17,7 +11,7 @@ TRANSLATIONS = {
         "start_rutube": "• RuTube (видео и shorts)",
         "start_usage": "Просто отправь мне ссылку на видео, и я скачаю его для тебя!",
         "start_help": "Используй /help для получения справки.",
-        # Команда /help
+
         "help_title": "Справка по использованию бота:",
         "help_usage": "Как использовать:",
         "help_usage_text": "Отправь мне ссылку на видео из поддерживаемой платформы, и я скачаю его для тебя.",
@@ -39,26 +33,26 @@ TRANSLATIONS = {
         "help_commands": "Команды:",
         "help_start": "/start - Начать работу с ботом",
         "help_help": "/help - Показать эту справку",
-        # Сообщения об ошибках
+
         "error_unsupported_url": "❌ Неподдерживаемая ссылка. Пожалуйста, отправь ссылку из поддерживаемых платформ.",
         "error_download_failed": "❌ Не удалось скачать видео. Попробуй другую ссылку.",
         "error_video_not_found": "❌ Видео не найдено или недоступно.",
         "error_processing_timeout": "⏰ Превышено время ожидания. Попробуй еще раз.",
         "error_unknown": "❌ Произошла неизвестная ошибка. Попробуй еще раз.",
         "error_invalid_url": "❌ Некорректная ссылка. Проверь правильность URL.",
-        # Сообщения о процессе
+
         "processing_video": "🎬 Обрабатываю видео...",
         "downloading_video": "⬇️ Скачиваю видео...",
         "sending_video": "📤 Отправляю видео...",
         "video_sent": "✅ Видео успешно отправлено!",
-        # Статистика
+
         "stats_processing_time": "Время обработки: {time:.1f}с",
         "stats_video_size": "Размер: {size:.1f} МБ",
-        # Общие
+
         "user": "Пользователь",
     },
     "en": {
-        # /start command
+
         "start_welcome": "Hello, {name}! 👋",
         "start_description": "I'm a bot for downloading videos from social networks!",
         "start_supported_platforms": "Supported platforms:",
@@ -70,7 +64,7 @@ TRANSLATIONS = {
         "start_rutube": "• RuTube (videos and shorts)",
         "start_usage": "Just send me a video link and I'll download it for you!",
         "start_help": "Use /help for help.",
-        # /help command
+
         "help_title": "Bot usage help:",
         "help_usage": "How to use:",
         "help_usage_text": "Send me a link to a video from a supported platform and I'll download it for you.",
@@ -92,19 +86,19 @@ TRANSLATIONS = {
         "help_commands": "Commands:",
         "help_start": "/start - Start working with the bot",
         "help_help": "/help - Show this help",
-        # Error messages
+
         "error_unsupported_url": "❌ Unsupported link. Please send a link from supported platforms.",
         "error_download_failed": "❌ Failed to download video. Try another link.",
         "error_video_not_found": "❌ Video not found or unavailable.",
         "error_processing_timeout": "⏰ Processing timeout. Please try again.",
         "error_unknown": "❌ An unknown error occurred. Please try again.",
         "error_invalid_url": "❌ Invalid link. Please check the URL format.",
-        # Process messages
+
         "processing_video": "🎬 Processing video...",
         "downloading_video": "⬇️ Downloading video...",
         "sending_video": "📤 Sending video...",
         "video_sent": "✅ Video sent successfully!",
-        # Statistics
+
         "stats_processing_time": "Processing time: {time:.1f}s",
         "stats_video_size": "Size: {size:.1f} MB",
         # General
@@ -183,36 +177,15 @@ DEFAULT_LANGUAGES = {
 
 
 def get_user_language(user_language_code: str = None) -> str:
-    """
-    Определяет язык пользователя на основе кода языка
-
-    Args:
-        user_language_code: Код языка пользователя из Telegram
-
-    Returns:
-        str: Код поддерживаемого языка ('ru' или 'en')
-    """
     if not user_language_code:
-        return "en"  # По умолчанию английский
+        return "en"
 
-    # Нормализуем код языка (берем только основную часть)
     lang_code = user_language_code.lower().split("-")[0].split("_")[0]
 
     return DEFAULT_LANGUAGES.get(lang_code, "en")
 
 
 def get_text(key: str, language: str = "en", **kwargs) -> str:
-    """
-    Получает переведенный текст
-
-    Args:
-        key: Ключ перевода
-        language: Код языка
-        **kwargs: Параметры для форматирования строки
-
-    Returns:
-        str: Переведенный текст
-    """
     if language not in TRANSLATIONS:
         language = "en"
 
