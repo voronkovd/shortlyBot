@@ -34,6 +34,7 @@ class TestRabbitMQClient:
                 "RABBITMQ_USER": "test_user",
                 "RABBITMQ_PASSWORD": "test_pass",
                 "RABBITMQ_VHOST": "/",
+                "RMQ_CONNECT_MAX_TRIES": "1",
             },
         ):
             client = RabbitMQClient()
@@ -53,6 +54,7 @@ class TestRabbitMQClient:
                 "RABBITMQ_USER": "test_user",
                 "RABBITMQ_PASSWORD": "test_pass",
                 "RABBITMQ_VHOST": "/",
+                "RMQ_CONNECT_MAX_TRIES": "1",
             },
         ):
             client = RabbitMQClient()
@@ -76,9 +78,10 @@ class TestRabbitMQClient:
                 "RABBITMQ_USER": "test_user",
                 "RABBITMQ_PASSWORD": "test_pass",
                 "RABBITMQ_VHOST": "/",
+                "RMQ_CONNECT_MAX_TRIES": "1",
             },
         ):
-            client = RabbitMQClient()
+            client = RabbitMQClient(autoconnect=True)
 
             # Проверяем, что соединение не установлено
             assert client.connection is None
