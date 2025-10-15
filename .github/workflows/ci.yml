@@ -20,6 +20,8 @@ permissions:
 
 jobs:
   lint:
+    # Линт только на PR и push в develop
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,11 +46,13 @@ jobs:
         run: isort --check-only --diff --profile black .
 
   test:
+    # Тесты — на PR и push в develop
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ '3.12' ] # добавь '3.13' если все зависимости совместимы
+        python-version: [ '3.12' ]  # добавь '3.13' при готовности
     services:
       rabbitmq:
         image: rabbitmq:3.12-management
@@ -74,7 +78,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/poetry.lock') }}
@@ -123,6 +127,8 @@ jobs:
           path: coverage.xml
 
   security:
+    # Безопасность — на PR и develop
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -151,14 +157,14 @@ jobs:
           path: bandit.sarif
 
   docker:
+    # Билдим/пушим только на push в main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [lint, test, security]
-    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
       - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Extract metadata (tags, labels)
         id: meta
@@ -177,16 +183,17 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy:
-    runs-on: ubuntu-latest
+    # Деплой сразу после docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: docker
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy to VPS (docker compose pull + up -d)
         uses: appleboy/ssh-action@v1.2.0
@@ -197,6 +204,6 @@ jobs:
           script: |
             cd ~/shortlybot
             export TELEGRAM_BOT_TOKEN='${{ secrets.TELEGRAM_BOT_TOKEN }}'
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker login ghcr.io -u "${{ github.actor }}" -p "${{ secrets.GITHUB_TOKEN }}"
             docker compose pull
             docker compose up -d --remove-orphans
