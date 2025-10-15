@@ -29,7 +29,6 @@ class RabbitMQClient:
 
         self._queues_args = {"x-message-ttl": 86_400_000}  # 24h
 
-
     def _params(self) -> pika.ConnectionParameters:
         return pika.ConnectionParameters(
             host=self.host,
@@ -115,7 +114,6 @@ class RabbitMQClient:
             except Exception as e:
                 logger.exception("Unexpected publish error: %s", e)
                 return
-
 
     def _build_message(self, base: Dict[str, Any]) -> Dict[str, Any]:
         m = {"timestamp": datetime.now(timezone.utc).isoformat()}

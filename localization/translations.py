@@ -11,7 +11,6 @@ TRANSLATIONS = {
         "start_rutube": "• RuTube (видео и shorts)",
         "start_usage": "Просто отправь мне ссылку на видео, и я скачаю его для тебя!",
         "start_help": "Используй /help для получения справки.",
-
         "help_title": "Справка по использованию бота:",
         "help_usage": "Как использовать:",
         "help_usage_text": "Отправь мне ссылку на видео из поддерживаемой платформы, и я скачаю его для тебя.",
@@ -33,26 +32,21 @@ TRANSLATIONS = {
         "help_commands": "Команды:",
         "help_start": "/start - Начать работу с ботом",
         "help_help": "/help - Показать эту справку",
-
         "error_unsupported_url": "❌ Неподдерживаемая ссылка. Пожалуйста, отправь ссылку из поддерживаемых платформ.",
         "error_download_failed": "❌ Не удалось скачать видео. Попробуй другую ссылку.",
         "error_video_not_found": "❌ Видео не найдено или недоступно.",
         "error_processing_timeout": "⏰ Превышено время ожидания. Попробуй еще раз.",
         "error_unknown": "❌ Произошла неизвестная ошибка. Попробуй еще раз.",
         "error_invalid_url": "❌ Некорректная ссылка. Проверь правильность URL.",
-
         "processing_video": "🎬 Обрабатываю видео...",
         "downloading_video": "⬇️ Скачиваю видео...",
         "sending_video": "📤 Отправляю видео...",
         "video_sent": "✅ Видео успешно отправлено!",
-
         "stats_processing_time": "Время обработки: {time:.1f}с",
         "stats_video_size": "Размер: {size:.1f} МБ",
-
         "user": "Пользователь",
     },
     "en": {
-
         "start_welcome": "Hello, {name}! 👋",
         "start_description": "I'm a bot for downloading videos from social networks!",
         "start_supported_platforms": "Supported platforms:",
@@ -64,7 +58,6 @@ TRANSLATIONS = {
         "start_rutube": "• RuTube (videos and shorts)",
         "start_usage": "Just send me a video link and I'll download it for you!",
         "start_help": "Use /help for help.",
-
         "help_title": "Bot usage help:",
         "help_usage": "How to use:",
         "help_usage_text": "Send me a link to a video from a supported platform and I'll download it for you.",
@@ -86,19 +79,16 @@ TRANSLATIONS = {
         "help_commands": "Commands:",
         "help_start": "/start - Start working with the bot",
         "help_help": "/help - Show this help",
-
         "error_unsupported_url": "❌ Unsupported link. Please send a link from supported platforms.",
         "error_download_failed": "❌ Failed to download video. Try another link.",
         "error_video_not_found": "❌ Video not found or unavailable.",
         "error_processing_timeout": "⏰ Processing timeout. Please try again.",
         "error_unknown": "❌ An unknown error occurred. Please try again.",
         "error_invalid_url": "❌ Invalid link. Please check the URL format.",
-
         "processing_video": "🎬 Processing video...",
         "downloading_video": "⬇️ Downloading video...",
         "sending_video": "📤 Sending video...",
         "video_sent": "✅ Video sent successfully!",
-
         "stats_processing_time": "Processing time: {time:.1f}s",
         "stats_video_size": "Size: {size:.1f} MB",
         # General
