@@ -20,35 +20,32 @@ permissions:
 
 jobs:
   lint:
+    # Линтим на PR и на push в develop; на push в main — не запускаем
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_DEFAULT }}
-
+      - uses: actions/setup-python@v5
+        with: { python-version: ${{ env.PYTHON_DEFAULT }} }
       - name: Install linters
         run: |
           python -m pip install --upgrade pip
           pip install ruff black isort
-
       - name: Ruff (lint)
         run: ruff check .
-
       - name: Black (check)
         run: black --check --diff .
-
       - name: isort (check)
         run: isort --check-only --diff --profile black .
 
   test:
+    # Тесты — только на PR и на push в develop
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ '3.12' ] # добавь '3.13' если все зависимости совместимы
+        python-version: [ '3.12' ]  # добавь '3.13' при готовности
     services:
       rabbitmq:
         image: rabbitmq:3.12-management
@@ -64,30 +61,21 @@ jobs:
         ports:
           - 5672:5672
           - 15672:15672
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Cache pip
-        uses: actions/cache@v3
+      - uses: actions/setup-python@v5
+        with: { python-version: ${{ matrix.python-version }} }
+      - uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
-
+          restore-keys: ${{ runner.os }}-pip-${{ matrix.python-version }}-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f pyproject.toml ]; then pip install .; fi
           pip install pytest pytest-cov
-
       - name: Wait for RabbitMQ
         run: |
           python - <<'PY'
@@ -102,7 +90,6 @@ jobs:
           else:
               raise SystemExit("RabbitMQ not reachable")
           PY
-
       - name: Run tests
         env:
           RABBITMQ_HOST: localhost
@@ -115,51 +102,41 @@ jobs:
           pytest -v \
             --cov=providers --cov=analytics --cov=handlers --cov=commands --cov=localization \
             --cov-report=term-missing --cov-report=xml:coverage.xml
-
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
 
   security:
+    # Безопасность — на PR и develop; main push пропускаем
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_DEFAULT }}
-
+      - uses: actions/setup-python@v5
+        with: { python-version: ${{ env.PYTHON_DEFAULT }} }
       - name: Install security tools
         run: |
           python -m pip install --upgrade pip
           pip install pip-audit bandit
-
       - name: pip-audit (dependencies)
         run: |
           if [ -f requirements.txt ]; then pip-audit --progress-spinner=off --requirement requirements.txt || true; else echo "No requirements.txt"; fi
-
       - name: Bandit (SARIF)
         run: bandit -r . -f sarif -o bandit.sarif || true
-
-      - name: Upload Bandit SARIF as artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: bandit-sarif
           path: bandit.sarif
 
   docker:
+    # Собираем образ только на push в main (без нужды ждать lint/test/security)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [lint, test, security]
-    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -169,24 +146,21 @@ jobs:
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy:
-    runs-on: ubuntu-latest
+    # Деплой сразу после билда образа на main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: docker
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy to VPS (docker compose pull + up -d)
         uses: appleboy/ssh-action@v1.2.0

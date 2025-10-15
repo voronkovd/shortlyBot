@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import tempfile
+import subprocess
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -11,13 +12,88 @@ import yt_dlp
 
 logger = logging.getLogger(__name__)
 
-# (тип ресурса, id) — например: ("reel", "C9AbcDe"), ("watch", "1234567890")
 KindId = Tuple[str, str]
+
+
+def human(n: int) -> str:
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024:
+            return f"{n:.0f} {unit}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+
+def compress_to_target(inp: str, outp: str, duration_s: float, target_bytes: int,
+                       max_height: int = 1080, audio_kbps: int = 128) -> None:
+    """
+    Сжимает видео до целевого размера (≈ target_bytes) двухпроходным H.264.
+    Ставит ограничение по высоте (max_height), сохраняя пропорции.
+    """
+    if duration_s <= 0:
+        raise RuntimeError("Unknown or zero duration; cannot compute target bitrate")
+
+    overhead_bytes = 512 * 1024  # запас под контейнер/погрешность
+    total_bits = max((target_bytes - overhead_bytes), int(target_bytes * 0.95)) * 8
+    # Аудио фиксированно (можно сделать динамическим)
+    a_bps = audio_kbps * 1000
+    # Целевой общий битрейт
+    total_bps = max(int(total_bits / duration_s), a_bps + 64_000)
+    # Видео битрейт = общий - аудио
+    v_bps = max(total_bps - a_bps, 128_000)  # не падаем ниже разумного минимума
+
+    v_kbps = v_bps // 1000
+    a_kbps = a_bps // 1000
+
+    scale_filter = f"scale=-2:'min({max_height},ih)'"
+
+    log_prefix = outp + ".2pass"
+    # pass 1
+    cmd1 = [
+        "ffmpeg", "-y", "-loglevel", "error", "-hide_banner",
+        "-i", inp,
+        "-vf", scale_filter,
+        "-c:v", "libx264", "-b:v", f"{v_kbps}k",
+        "-maxrate", f"{v_kbps}k", "-bufsize", f"{max(v_kbps*2, 500)}k",
+        "-preset", "medium", "-tune", "fastdecode",
+        "-pass", "1", "-passlogfile", log_prefix,
+        "-an",
+        "-f", "mp4",  # пишем в «пустоту», но формат задаём
+        os.devnull,
+    ]
+    # pass 2
+    cmd2 = [
+        "ffmpeg", "-y", "-loglevel", "error", "-hide_banner",
+        "-i", inp,
+        "-vf", scale_filter,
+        "-c:v", "libx264", "-b:v", f"{v_kbps}k",
+        "-maxrate", f"{v_kbps}k", "-bufsize", f"{max(v_kbps*2, 500)}k",
+        "-preset", "medium", "-tune", "fastdecode",
+        "-pass", "2", "-passlogfile", log_prefix,
+        "-movflags", "+faststart",
+        "-c:a", "aac", "-b:a", f"{a_kbps}k",
+        outp,
+    ]
+
+    logger.info(f"Re-encoding target ≈ {human(target_bytes)} "
+                f"(total ~{total_bps/1000:.0f} kbps; video ~{v_kbps} kbps, audio {a_kbps} kbps)")
+
+    try:
+        subprocess.run(cmd1, check=True)
+        subprocess.run(cmd2, check=True)
+    finally:
+        # Удаляем пасс-логи
+        for ext in (".log", ".mbtree"):
+            p = log_prefix + ext
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
 
 
 class BaseProvider(ABC):
     PATTERNS: List[Tuple[str, str]] = []
-    platform: str = ""  # например, "instagram", "tiktok"
+    platform: str = ""
 
     def extract_id(self, url: str) -> Optional[KindId]:
         clean = url.split("?", 1)[0].split("#", 1)[0]
@@ -36,19 +112,14 @@ class BaseProvider(ABC):
     def _yt_opts(self, temp_dir: str) -> Dict:
         opts = {
             "outtmpl": os.path.join(temp_dir, "%(title)s.%(ext)s"),
-            # Приоритет: H.264 MP4 → готовый MP4 → любой best
             "format": "bv*[ext=mp4][vcodec=h264]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b",
-            # Объединяем дорожки и оставляем mp4-контейнер
             "merge_output_format": "mp4",
-            # Достаточно ремакса в MP4; конвертер обычно не нужен
             "postprocessors": [
                 {"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"},
             ],
-            # Аргументы для финального вызова ffmpeg (на выход)
             "postprocessor_args": {
                 "ffmpeg_o": ["-movflags", "+faststart"],
             },
-            # Тихий режим + ожидаемые тестом ключи
             "quiet": True,
             "no_warnings": True,
             "extract_flat": False,
@@ -72,10 +143,7 @@ class BaseProvider(ABC):
             "prefer_free_formats": False,
         }
 
-        # Куки: копируем в temp, чтобы не трогать ro-монты
-        cookie_src = os.getenv("YTDLP_COOKIES_FILE_RUNTIME") or os.getenv(
-            "YTDLP_COOKIES_FILE"
-        )
+        cookie_src = os.getenv("YTDLP_COOKIES_FILE_RUNTIME") or os.getenv("YTDLP_COOKIES_FILE")
         if cookie_src and os.path.exists(cookie_src):
             try:
                 cookie_dst = os.path.join(temp_dir, "yt_cookies.txt")
@@ -85,7 +153,6 @@ class BaseProvider(ABC):
             except Exception as e:
                 logger.warning(f"Cannot prepare cookiefile: {e}")
 
-        # Сортировка форматов: сначала по высоте, потом кодек/контейнер/качество
         max_h = int(os.getenv("MAX_HEIGHT", "1080"))
         opts["format_sort"] = [
             f"res:{max_h}",
@@ -95,20 +162,15 @@ class BaseProvider(ABC):
             "vbr",
             "abr",
         ]
-
         return opts
 
-    def download_video(
-        self, ref: Union[str, KindId]
-    ) -> Tuple[Optional[bytes], Optional[str]]:
+    def download_video(self, ref: Union[str, KindId]) -> Tuple[Optional[bytes], Optional[str]]:
         if isinstance(ref, tuple):
             kind, ident = ref
         else:
-            kind, ident = "post", ref  # дефолт
+            kind, ident = "post", ref
 
-        platform_name = (
-            self.platform or self.__class__.__name__.replace("Downloader", "").lower()
-        )
+        platform_name = (self.platform or self.__class__.__name__.replace("Downloader", "").lower())
         logger.info(f"🔍 Starting {platform_name} {kind} download for ID: {ident}")
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -121,16 +183,13 @@ class BaseProvider(ABC):
                     info = ydl.extract_info(url, download=False)
                     if not info:
                         raise RuntimeError("Failed to get video information")
-                    logger.info(
-                        f"Title: {info.get('title')!r}, duration: {info.get('duration')}"
-                    )
+                    duration = float(info.get("duration") or 0.0)
+                    logger.info(f"Title: {info.get('title')!r}, duration: {duration}")
 
                     try:
                         ydl.download([url])
                     except Exception as format_error:
-                        logger.warning(
-                            f"Format error: {format_error} → fallback to 'best'"
-                        )
+                        logger.warning(f"Format error: {format_error} → fallback to 'best'")
                         ydl_opts["format"] = "best"
                         with yt_dlp.YoutubeDL(ydl_opts) as ydl2:
                             ydl2.download([url])
@@ -142,14 +201,36 @@ class BaseProvider(ABC):
                     raise RuntimeError("Video file not found after download")
 
                 video_file = max(files, key=lambda p: os.path.getsize(p))
-                logger.info(
-                    f"📁 Selected file: {os.path.basename(video_file)} ({os.path.getsize(video_file)} bytes)"
-                )
+                size = os.path.getsize(video_file)
+                logger.info(f"📁 Selected file: {os.path.basename(video_file)} ({human(size)})")
 
-                with open(video_file, "rb") as f:
+                # --- условное сжатие ---
+                max_size_mb = int(os.getenv("MAX_SIZE_MB", "50"))
+                target_bytes = max_size_mb * 1024 * 1024
+                max_height = int(os.getenv("MAX_HEIGHT", "1080"))
+
+                if size > target_bytes:
+                    logger.info(f"File exceeds {max_size_mb} MB → compressing…")
+                    outp = os.path.join(temp_dir, "compressed.mp4")
+                    compress_to_target(
+                        inp=video_file,
+                        outp=outp,
+                        duration_s=duration,
+                        target_bytes=target_bytes,
+                        max_height=max_height,
+                        audio_kbps=int(os.getenv("AUDIO_KBPS", "128")),
+                    )
+                    final_file = outp
+                else:
+                    final_file = video_file
+
+                with open(final_file, "rb") as f:
                     data = f.read()
 
-                caption = info.get("title") or info.get("description") or ""
+                final_size = len(data)
+                logger.info(f"✅ Final size: {human(final_size)}")
+
+                caption = (info.get("title") or info.get("description") or "")[:1024]
                 if caption:
                     logger.info(f"Caption preview: {caption[:80]}...")
 
