@@ -18,6 +18,8 @@ class TestRabbitMQClient:
 
             ch.basic_publish = Mock(return_value=True)
             ch.queue_declare = Mock()
+            ch.queue_bind = Mock()
+            ch.exchange_declare = Mock()
             ch.confirm_delivery = Mock(return_value=None)
 
             mp.BlockingConnection.return_value = conn
@@ -35,6 +37,28 @@ class TestRabbitMQClient:
         assert "provider_stats" in queues
         assert "bot_events" in queues
 
+    def _assert_exchange_and_bindings(self, ch):
+        # Проверяем объявление exchange
+        ch.exchange_declare.assert_called_once_with(
+            exchange="shortly_bot", exchange_type="direct", durable=True
+        )
+
+        # Проверяем привязку очередей к exchange
+        bind_calls = ch.queue_bind.call_args_list
+        bindings = [
+            (c.kwargs["exchange"], c.kwargs["queue"], c.kwargs["routing_key"])
+            for c in bind_calls
+        ]
+
+        expected_bindings = [
+            ("shortly_bot", "user_stats", "user_stats"),
+            ("shortly_bot", "provider_stats", "provider_stats"),
+            ("shortly_bot", "bot_events", "bot_events"),
+        ]
+
+        for expected in expected_bindings:
+            assert expected in bindings
+
     def test_send_user_stats_success(self, mock_pika, rabbitmq_client):
         mp, conn, ch = mock_pika
 
@@ -50,10 +74,11 @@ class TestRabbitMQClient:
         conn.channel.assert_called_once()
 
         self._assert_three_queues_declared(ch)
+        self._assert_exchange_and_bindings(ch)
 
         ch.basic_publish.assert_called_once()
         args, kwargs = ch.basic_publish.call_args
-        assert kwargs["exchange"] == ""
+        assert kwargs["exchange"] == "shortly_bot"
         assert kwargs["routing_key"] == "user_stats"
 
         body = json.loads(kwargs["body"])
@@ -80,9 +105,13 @@ class TestRabbitMQClient:
         mp.BlockingConnection.assert_called_once()
         conn.channel.assert_called_once()
         self._assert_three_queues_declared(ch)
+        self._assert_exchange_and_bindings(ch)
 
         ch.basic_publish.assert_called_once()
-        body = json.loads(ch.basic_publish.call_args.kwargs["body"])
+        args, kwargs = ch.basic_publish.call_args
+        assert kwargs["exchange"] == "shortly_bot"
+        assert kwargs["routing_key"] == "provider_stats"
+        body = json.loads(kwargs["body"])
         assert body["platform"] == "tiktok"
         assert body["action"] == "download_success"
         assert body["success"] is True
@@ -102,9 +131,11 @@ class TestRabbitMQClient:
         mp.BlockingConnection.assert_called_once()
         conn.channel.assert_called_once()
         self._assert_three_queues_declared(ch)
+        self._assert_exchange_and_bindings(ch)
 
         ch.basic_publish.assert_called_once()
         kwargs = ch.basic_publish.call_args.kwargs
+        assert kwargs["exchange"] == "shortly_bot"
         assert kwargs["routing_key"] == "bot_events"
 
         body = json.loads(kwargs["body"])
@@ -124,6 +155,8 @@ class TestRabbitMQClient:
         assert conn.channel.call_count == 2
 
         assert ch.queue_declare.call_count == 6
+        assert ch.exchange_declare.call_count == 2
+        assert ch.queue_bind.call_count == 6
         self._assert_three_queues_declared(ch)
 
         assert ch.basic_publish.call_count == 2

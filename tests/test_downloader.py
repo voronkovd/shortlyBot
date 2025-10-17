@@ -7,8 +7,6 @@ from providers.base import BaseProvider
 
 
 class MockProvider(BaseProvider):
-    """Мок провайдер для тестирования"""
-
     def __init__(
         self, platform_name, valid_urls=None, extract_result=None, download_result=None
     ):
@@ -34,7 +32,6 @@ class TestDownloader:
 
     @pytest.fixture
     def mock_providers(self):
-        """Создает мок провайдеры для тестирования"""
         providers = [
             MockProvider(
                 "instagram",
@@ -59,14 +56,12 @@ class TestDownloader:
 
     @pytest.fixture
     def downloader(self, mock_providers):
-        """Создает Downloader с мок провайдерами"""
         with patch("handlers.downloader.Downloader.__init__", return_value=None):
             downloader = Downloader()
             downloader.downloaders = mock_providers
             return downloader
 
     def test_get_downloader_found(self, downloader):
-        """Тест поиска подходящего провайдера"""
         url = "https://instagram.com/p/123/"
         provider = downloader.get_downloader(url)
 
@@ -74,24 +69,21 @@ class TestDownloader:
         assert provider.platform == "instagram"
 
     def test_get_downloader_not_found(self, downloader):
-        """Тест случая, когда провайдер не найден"""
         url = "https://unknown-platform.com/video/123"
         provider = downloader.get_downloader(url)
 
         assert provider is None
 
     def test_download_video_success(self, downloader):
-        """Тест успешного скачивания видео"""
         url = "https://instagram.com/p/123/"
 
         video_data, caption, platform = downloader.download_video(url)
 
         assert video_data == b"video_data"
         assert caption == "caption"
-        assert platform == "mockprovider"
+        assert platform == "instagram"
 
     def test_download_video_no_provider(self, downloader):
-        """Тест скачивания без подходящего провайдера"""
         url = "https://unknown-platform.com/video/123"
 
         video_data, caption, platform = downloader.download_video(url)
@@ -101,8 +93,6 @@ class TestDownloader:
         assert platform is None
 
     def test_download_video_no_extract_id(self, downloader):
-        """Тест скачивания без возможности извлечь ID"""
-        # Создаем провайдер, который не может извлечь ID
         mock_provider = MockProvider("test", ["https://test.com/video/123"], None, None)
         downloader.downloaders = [mock_provider]
 
@@ -115,8 +105,6 @@ class TestDownloader:
         assert platform is None
 
     def test_download_video_provider_exception(self, downloader):
-        """Тест обработки исключения от провайдера"""
-        # Создаем провайдер, который выбрасывает исключение
         mock_provider = MockProvider(
             "test", ["https://test.com/video/123"], ("video", "123"), None
         )
@@ -132,8 +120,6 @@ class TestDownloader:
         assert platform is None
 
     def test_download_video_with_tuple_ref(self, downloader):
-        """Тест скачивания с передачей tuple в качестве ref"""
-        # Создаем провайдер, который принимает tuple
         mock_provider = MockProvider(
             "test",
             ["https://test.com/video/123"],
@@ -148,11 +134,9 @@ class TestDownloader:
 
         assert video_data == b"video_data"
         assert caption == "caption"
-        assert platform == "mockprovider"
+        assert platform == "test"
 
     def test_download_video_empty_result(self, downloader):
-        """Тест скачивания с пустым результатом"""
-        # Создаем провайдер, который возвращает пустой результат
         mock_provider = MockProvider(
             "test", ["https://test.com/video/123"], ("video", "123"), (None, "caption")
         )
@@ -167,8 +151,6 @@ class TestDownloader:
         assert platform is None
 
     def test_download_video_string_ref(self, downloader):
-        """Тест скачивания с передачей строки в качестве ref"""
-        # Создаем провайдер, который принимает строку
         mock_provider = MockProvider(
             "test",
             ["https://test.com/video/123"],
@@ -183,4 +165,4 @@ class TestDownloader:
 
         assert video_data == b"video_data"
         assert caption == "caption"
-        assert platform == "mockprovider"
+        assert platform == "test"

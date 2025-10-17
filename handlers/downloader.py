@@ -53,7 +53,11 @@ class Downloader:
 
         try:
             video_data, caption = downloader.download_video(video_id)
-            platform = downloader.__class__.__name__.replace("Downloader", "").lower()
+            platform = getattr(
+                downloader,
+                "platform",
+                downloader.__class__.__name__.replace("Provider", "").lower(),
+            )
 
             if video_data:
                 logger.info(f"Video successfully downloaded from {platform}")
