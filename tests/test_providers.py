@@ -18,7 +18,6 @@ class TestInstagramProvider:
         assert provider.platform == "instagram"
 
     def test_valid_urls(self, provider):
-        """Тест валидных URL Instagram"""
         valid_urls = [
             "https://www.instagram.com/p/ABC123/",
             "https://instagram.com/reel/XYZ789/",
@@ -30,7 +29,6 @@ class TestInstagramProvider:
             assert provider.is_valid_url(url), f"URL should be valid: {url}"
 
     def test_invalid_urls(self, provider):
-        """Тест невалидных URL"""
         invalid_urls = [
             "https://www.youtube.com/watch?v=123",
             "https://tiktok.com/@user/video/123",
@@ -43,7 +41,6 @@ class TestInstagramProvider:
             assert not provider.is_valid_url(url), f"URL should be invalid: {url}"
 
     def test_extract_id(self, provider):
-        """Тест извлечения ID из URL"""
         test_cases = [
             ("https://www.instagram.com/p/ABC123/", ("post", "ABC123")),
             ("https://instagram.com/reel/XYZ789/", ("reel", "XYZ789")),
@@ -55,7 +52,6 @@ class TestInstagramProvider:
             assert result == expected, f"Expected {expected}, got {result} for {url}"
 
     def test_build_url(self, provider):
-        """Тест построения URL"""
         test_cases = [
             (("post", "ABC123"), "https://www.instagram.com/p/ABC123/"),
             (("reel", "XYZ789"), "https://www.instagram.com/reel/XYZ789/"),
@@ -77,7 +73,6 @@ class TestTikTokProvider:
         assert provider.platform == "tiktok"
 
     def test_valid_urls(self, provider):
-        """Тест валидных URL TikTok"""
         valid_urls = [
             "https://www.tiktok.com/@user/video/1234567890",
             "https://tiktok.com/@user/video/1234567890",
@@ -89,7 +84,6 @@ class TestTikTokProvider:
             assert provider.is_valid_url(url), f"URL should be valid: {url}"
 
     def test_extract_id(self, provider):
-        """Тест извлечения ID из URL"""
         test_cases = [
             ("https://www.tiktok.com/@user/video/1234567890", ("video", "1234567890")),
             ("https://vm.tiktok.com/ABC123", ("short", "ABC123")),
@@ -110,7 +104,6 @@ class TestYouTubeProvider:
         assert provider.platform == "youtube"
 
     def test_valid_urls(self, provider):
-        """Тест валидных URL YouTube"""
         valid_urls = [
             "https://www.youtube.com/shorts/ABC123",
             "https://youtu.be/ABC123",
@@ -120,7 +113,6 @@ class TestYouTubeProvider:
             assert provider.is_valid_url(url), f"URL should be valid: {url}"
 
     def test_extract_id(self, provider):
-        """Тест извлечения ID из URL"""
         test_cases = [
             ("https://www.youtube.com/shorts/ABC123", ("watch", "ABC123")),
             ("https://youtu.be/ABC123", ("watch", "ABC123")),
@@ -141,7 +133,6 @@ class TestLikeeProvider:
         assert provider.platform == "likee"
 
     def test_valid_urls(self, provider):
-        """Тест валидных URL Likee"""
         valid_urls = [
             "https://likee.video/video/123456789",
             "https://likee.com/video/123456789",
@@ -152,7 +143,6 @@ class TestLikeeProvider:
             assert provider.is_valid_url(url), f"URL should be valid: {url}"
 
     def test_extract_id(self, provider):
-        """Тест извлечения ID из URL"""
         test_cases = [
             ("https://likee.video/video/123456789", ("video", "123456789")),
             ("https://likee.video/@user/video/123456789", ("video", "123456789")),
@@ -173,7 +163,6 @@ class TestFacebookProvider:
         assert provider.platform == "facebook"
 
     def test_valid_urls(self, provider):
-        """Тест валидных URL Facebook"""
         valid_urls = [
             "https://www.facebook.com/reel/123456789",
             "https://fb.watch/ABC123",
@@ -193,7 +182,6 @@ class TestRuTubeProvider:
         assert provider.platform == "rutube"
 
     def test_valid_urls(self, provider):
-        """Тест валидных URL RuTube"""
         valid_urls = [
             "https://rutube.ru/video/abc123def456",
             "https://rutube.ru/shorts/cea63c15281278af170cdaec2115cf87",
@@ -204,7 +192,6 @@ class TestRuTubeProvider:
             assert provider.is_valid_url(url), f"URL should be valid: {url}"
 
     def test_extract_id(self, provider):
-        """Тест извлечения ID из URL"""
         test_cases = [
             ("https://rutube.ru/video/abc123def456", ("video", "abc123def456")),
             (
@@ -219,7 +206,6 @@ class TestRuTubeProvider:
             assert result == expected, f"Expected {expected}, got {result} for {url}"
 
     def test_build_url(self, provider):
-        """Тест построения URL"""
         test_cases = [
             (("video", "abc123def456"), "https://rutube.ru/video/abc123def456/"),
             (

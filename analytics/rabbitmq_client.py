@@ -56,11 +56,30 @@ class RabbitMQClient:
             ch.confirm_delivery()
         except Exception:
             pass
+
+        # Объявляем exchange
+        ch.exchange_declare(
+            exchange="shortly_bot", exchange_type="direct", durable=True
+        )
+
+        # Объявляем очереди
         ch.queue_declare(queue="user_stats", durable=True, arguments=self._queues_args)
         ch.queue_declare(
             queue="provider_stats", durable=True, arguments=self._queues_args
         )
         ch.queue_declare(queue="bot_events", durable=True, arguments=self._queues_args)
+
+        # Привязываем очереди к exchange
+        ch.queue_bind(
+            exchange="shortly_bot", queue="user_stats", routing_key="user_stats"
+        )
+        ch.queue_bind(
+            exchange="shortly_bot", queue="provider_stats", routing_key="provider_stats"
+        )
+        ch.queue_bind(
+            exchange="shortly_bot", queue="bot_events", routing_key="bot_events"
+        )
+
         return conn, ch
 
     def _publish_once(self, routing_key: str, message: Dict[str, Any]) -> None:
@@ -68,7 +87,7 @@ class RabbitMQClient:
         try:
             conn, ch = self._open()
             ch.basic_publish(
-                exchange="",
+                exchange="shortly_bot",
                 routing_key=routing_key,
                 body=json.dumps(message),
                 properties=pika.BasicProperties(

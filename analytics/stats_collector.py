@@ -12,11 +12,20 @@ class StatsCollector:
     def __init__(self):
         self.rabbitmq = rabbitmq_client
 
+    def _get_display_username(self, user_id: int, username: str) -> str:
+        """Создает более информативный username для отображения"""
+        if username:
+            return username
+        return f"user_{user_id}"
+
     def track_user_request(self, user_id: int, username: str, platform: str):
         try:
+            # Создаем более информативный username
+            display_username = self._get_display_username(user_id, username)
+
             self.rabbitmq.send_user_stats(
                 user_id=user_id,
-                username=username or "unknown",
+                username=display_username,
                 action="download_request",
                 platform=platform,
                 success=True,
@@ -34,10 +43,13 @@ class StatsCollector:
         processing_time: float,
     ):
         try:
+            # Создаем более информативный username
+            display_username = self._get_display_username(user_id, username)
+
             # Статистика пользователя
             self.rabbitmq.send_user_stats(
                 user_id=user_id,
-                username=username or "unknown",
+                username=display_username,
                 action="download_success",
                 platform=platform,
                 success=True,
@@ -68,9 +80,12 @@ class StatsCollector:
         processing_time: Optional[float] = None,
     ):
         try:
+            # Создаем более информативный username
+            display_username = self._get_display_username(user_id, username)
+
             self.rabbitmq.send_user_stats(
                 user_id=user_id,
-                username=username or "unknown",
+                username=display_username,
                 action="download_failed",
                 platform=platform,
                 success=False,

@@ -114,6 +114,8 @@ class TestBaseProvider:
             "title": "Test Video",
             "description": "Test Description",
             "duration": 30,
+            "uploader": "test_user",
+            "uploader_id": "testuser123",
         }
         mock_ydl.extract_info.return_value = mock_info
 
@@ -124,7 +126,8 @@ class TestBaseProvider:
             video_data, caption = provider.download_video(("video", "123"))
 
         assert video_data == b"video_data"
-        assert caption == "Test Video"
+        expected_caption = "Test Video\n\nTest Description\n\nVideo by @testuser123"
+        assert caption == expected_caption
 
         mock_ydl.extract_info.assert_called_once()
         mock_ydl.download.assert_called_once()
@@ -196,6 +199,190 @@ class TestBaseProvider:
         assert caption == "Test Video"
 
         assert mock_ydl.download.call_count == 2
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_with_uploader_only(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        mock_info = {
+            "title": "Test Video",
+            "duration": 30,
+            "uploader": "Test User",
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            video_data, caption = provider.download_video(("video", "123"))
+
+        assert video_data == b"video_data"
+        expected_caption = "Test Video\n\nVideo by @testuser"
+        assert caption == expected_caption
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_with_channel_info(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        mock_info = {
+            "title": "Test Video",
+            "duration": 30,
+            "channel": "Test Channel",
+            "channel_id": "testchannel456",
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            video_data, caption = provider.download_video(("video", "123"))
+
+        assert video_data == b"video_data"
+        expected_caption = "Test Video\n\nVideo by @testchannel456"
+        assert caption == expected_caption
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_no_attribution(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        mock_info = {
+            "title": "Test Video",
+            "duration": 30,
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            video_data, caption = provider.download_video(("video", "123"))
+
+        assert video_data == b"video_data"
+        assert caption == "Test Video"
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_same_title_description(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        mock_info = {
+            "title": "Test Video",
+            "description": "Test Video",  # То же самое что title
+            "duration": 30,
+            "uploader": "test_user",
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            video_data, caption = provider.download_video(("video", "123"))
+
+        assert video_data == b"video_data"
+        expected_caption = "Test Video\n\nVideo by @test_user"
+        assert caption == expected_caption
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_description_only(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        mock_info = {
+            "description": "Only description available",
+            "duration": 30,
+            "uploader": None,
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            _, caption = provider.download_video(("video", "123"))
+
+        assert caption == "Only description available"
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_channel_without_id(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        mock_info = {
+            "title": "Channel Video",
+            "duration": 30,
+            "channel": "Test Channel Name",
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            _, caption = provider.download_video(("video", "123"))
+
+        expected_caption = "Channel Video\n\nVideo by @testchannelname"
+        assert caption == expected_caption
+
+    @patch("providers.base.yt_dlp.YoutubeDL")
+    @patch("providers.base.glob.glob")
+    @patch("providers.base.os.path.getsize")
+    def test_download_video_caption_truncates(
+        self, mock_getsize, mock_glob, mock_ydl_class, provider
+    ):
+        mock_ydl = Mock()
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        long_title = "T" * 512
+        long_description = "D" * 800
+        mock_info = {
+            "title": long_title,
+            "description": long_description,
+            "duration": 30,
+            "uploader": "Test User",
+        }
+        mock_ydl.extract_info.return_value = mock_info
+
+        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_getsize.return_value = 1024000
+
+        with patch("builtins.open", mock_open_with_content(b"video_data")):
+            _, caption = provider.download_video(("video", "123"))
+
+        full_caption = f"{long_title}\n\n{long_description}\n\nVideo by @testuser"
+        assert len(full_caption) > 1024
+        expected_caption = full_caption[:1024]
+        assert caption == expected_caption
+        assert len(caption) == 1024
 
 
 def mock_open_with_content(content):

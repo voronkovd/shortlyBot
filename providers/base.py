@@ -289,9 +289,38 @@ class BaseProvider(ABC):
                 final_size = len(data)
                 logger.info(f"✅ Final size: {human(final_size)}")
 
-                caption = (info.get("title") or info.get("description") or "")[:1024]
+                # Формируем caption с атрибуцией
+                title = info.get("title") or ""
+                description = info.get("description") or ""
+                uploader = info.get("uploader") or info.get("channel") or ""
+                uploader_id = info.get("uploader_id") or info.get("channel_id") or ""
+
+                # Создаем атрибуцию
+                attribution = ""
+                if uploader:
+                    # Используем uploader_id если есть, иначе uploader
+                    username = uploader_id if uploader_id else uploader
+                    # Убираем лишние символы и приводим к нижнему регистру для @
+                    username = re.sub(r"[^\w\-_.]", "", username.lower())
+                    if username:
+                        attribution = f"Video by @{username}"
+
+                # Объединяем title, description и атрибуцию
+                caption_parts = []
+                if title:
+                    caption_parts.append(title)
+                if description and description != title:
+                    # Добавляем описание только если оно отличается от заголовка
+                    caption_parts.append(description)
+                if attribution:
+                    caption_parts.append(attribution)
+
+                caption = "\n\n".join(caption_parts)[:1024]
+
                 if caption:
                     logger.info(f"Caption preview: {caption[:80]}...")
+                    if attribution:
+                        logger.info(f"Video attribution: {attribution}")
 
                 return data, caption
 

@@ -65,8 +65,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"📨 Received message from user {user.id} (@{user.username}): {message_text}"
     )
 
+    # Определяем платформу из URL
+    platform = "unknown"
+    downloader_provider = downloader.get_downloader(message_text)
+    if downloader_provider:
+        platform = getattr(downloader_provider, "platform", "unknown")
+
     # Отслеживаем запрос пользователя
-    stats_collector.track_user_request(user.id, user.username, "unknown")
+    stats_collector.track_user_request(user.id, user.username, platform)
 
     processing_msg = await update.message.reply_text(t("processing_video", user=user))
 
