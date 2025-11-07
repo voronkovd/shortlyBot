@@ -138,5 +138,33 @@ class StatsCollector:
         except Exception as e:
             logger.error(f"Failed to track bot stop: {e}")
 
+    def track_group_added(self, chat_id: int, title: str, chat_type: str):
+        try:
+            self.rabbitmq.send_bot_event(
+                "group_added",
+                {
+                    "chat_id": chat_id,
+                    "title": title,
+                    "chat_type": chat_type,
+                },
+            )
+            logger.info(f"Tracked group added: {chat_id} ({title})")
+        except Exception as e:
+            logger.error(f"Failed to track group added: {e}")
+
+    def track_group_message(self, chat_id: int, title: str, chat_type: str):
+        try:
+            self.rabbitmq.send_bot_event(
+                "group_message",
+                {
+                    "chat_id": chat_id,
+                    "title": title,
+                    "chat_type": chat_type,
+                },
+            )
+            logger.debug(f"Tracked group message: {chat_id} ({title})")
+        except Exception as e:
+            logger.error(f"Failed to track group message: {e}")
+
 
 stats_collector = StatsCollector()

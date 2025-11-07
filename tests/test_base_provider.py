@@ -33,25 +33,25 @@ class TestBaseProvider:
         url = "https://test.com/video/123"
         result = provider.extract_id(url)
 
-        assert result == ("video", "123")
+        assert result == ("video", "123")  # nosec B101 - assert в тестах безопасен
 
     def test_extract_id_with_query_params(self, provider):
         url = "https://test.com/video/123?param=value"
         result = provider.extract_id(url)
 
-        assert result == ("video", "123")
+        assert result == ("video", "123")  # nosec B101 - assert в тестах безопасен
 
     def test_extract_id_with_fragment(self, provider):
         url = "https://test.com/video/123#fragment"
         result = provider.extract_id(url)
 
-        assert result == ("video", "123")
+        assert result == ("video", "123")  # nosec B101 - assert в тестах безопасен
 
     def test_extract_id_no_match(self, provider):
         url = "https://other.com/video/123"
         result = provider.extract_id(url)
 
-        assert result is None
+        assert result is None  # nosec B101 - assert в тестах безопасен
 
     def test_extract_id_case_insensitive(self, provider):
         url = "https://TEST.COM/VIDEO/123"
@@ -126,7 +126,7 @@ class TestBaseProvider:
             video_data, caption = provider.download_video(("video", "123"))
 
         assert video_data == b"video_data"
-        expected_caption = "Test Video\n\nTest Description\n\nVideo by @testuser123"
+        expected_caption = "Test Video\n\nTest Description"
         assert caption == expected_caption
 
         mock_ydl.extract_info.assert_called_once()
@@ -223,7 +223,7 @@ class TestBaseProvider:
             video_data, caption = provider.download_video(("video", "123"))
 
         assert video_data == b"video_data"
-        expected_caption = "Test Video\n\nVideo by @testuser"
+        expected_caption = "Test Video"
         assert caption == expected_caption
 
     @patch("providers.base.yt_dlp.YoutubeDL")
@@ -250,7 +250,7 @@ class TestBaseProvider:
             video_data, caption = provider.download_video(("video", "123"))
 
         assert video_data == b"video_data"
-        expected_caption = "Test Video\n\nVideo by @testchannel456"
+        expected_caption = "Test Video"
         assert caption == expected_caption
 
     @patch("providers.base.yt_dlp.YoutubeDL")
@@ -301,7 +301,7 @@ class TestBaseProvider:
             video_data, caption = provider.download_video(("video", "123"))
 
         assert video_data == b"video_data"
-        expected_caption = "Test Video\n\nVideo by @test_user"
+        expected_caption = "Test Video"
         assert caption == expected_caption
 
     @patch("providers.base.yt_dlp.YoutubeDL")
@@ -350,7 +350,7 @@ class TestBaseProvider:
         with patch("builtins.open", mock_open_with_content(b"video_data")):
             _, caption = provider.download_video(("video", "123"))
 
-        expected_caption = "Channel Video\n\nVideo by @testchannelname"
+        expected_caption = "Channel Video"
         assert caption == expected_caption
 
     @patch("providers.base.yt_dlp.YoutubeDL")
@@ -378,7 +378,7 @@ class TestBaseProvider:
         with patch("builtins.open", mock_open_with_content(b"video_data")):
             _, caption = provider.download_video(("video", "123"))
 
-        full_caption = f"{long_title}\n\n{long_description}\n\nVideo by @testuser"
+        full_caption = f"{long_title}\n\n{long_description}"
         assert len(full_caption) > 1024
         expected_caption = full_caption[:1024]
         assert caption == expected_caption

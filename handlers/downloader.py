@@ -58,13 +58,16 @@ class Downloader:
                 "platform",
                 downloader.__class__.__name__.replace("Provider", "").lower(),
             )
+            # Если platform пустая строка, используем fallback
+            if not platform:
+                platform = downloader.__class__.__name__.replace("Provider", "").lower()
 
             if video_data:
                 logger.info(f"Video successfully downloaded from {platform}")
                 return video_data, caption, platform
             else:
                 logger.error(f"Failed to download video from {platform}")
-                return None, None, None
+                return None, None, platform
 
         except Exception as e:
             logger.error(f"Download error: {e}")

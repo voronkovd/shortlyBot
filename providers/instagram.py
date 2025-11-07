@@ -8,7 +8,7 @@ class InstagramProvider(BaseProvider):
     platform = "instagram"
     PATTERNS = [
         ("post", r"instagram\.com/p/([^/]+)"),
-        ("reel", r"instagram\.com/reel/([^/]+)"),
+        ("reels", r"instagram\.com/reels/([^/]+)"),
         ("tv", r"instagram\.com/tv/([^/]+)"),
         ("story", r"instagram\.com/stories/[^/]+/([^/]+)"),
     ]
@@ -29,8 +29,8 @@ class InstagramProvider(BaseProvider):
     def _build_url(self, kind: str, ident: str) -> str:
         if kind == "post":
             return f"https://www.instagram.com/p/{ident}/"
-        if kind == "reel":
-            return f"https://www.instagram.com/reel/{ident}/"
+        if kind == "reel" or kind == "reels":
+            return f"https://www.instagram.com/reels/{ident}/"
         if kind == "tv":
             return f"https://www.instagram.com/tv/{ident}/"
         if kind == "story":

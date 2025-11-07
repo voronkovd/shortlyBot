@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import shutil
-import subprocess
+import subprocess  # nosec B404 - используется для вызова ffmpeg, безопасно
 import tempfile
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple, Union
@@ -127,8 +127,9 @@ def compress_to_target(
     )
 
     try:
-        subprocess.run(cmd1, check=True)
-        subprocess.run(cmd2, check=True)
+        # Входные данные безопасны: это внутренние пути файлов, не пользовательский ввод
+        subprocess.run(cmd1, check=True)  # nosec B603
+        subprocess.run(cmd2, check=True)  # nosec B603
     finally:
         # Удаляем пасс-логи
         for ext in (".log", ".mbtree"):
@@ -136,8 +137,9 @@ def compress_to_target(
             if os.path.exists(p):
                 try:
                     os.remove(p)
-                except Exception:
-                    pass
+                except Exception as e:
+                    # Игнорируем ошибки при удалении временных файлов
+                    logger.debug(f"Could not remove temp file {p}: {e}")
 
 
 class BaseProvider(ABC):
@@ -292,18 +294,6 @@ class BaseProvider(ABC):
                 # Формируем caption с атрибуцией
                 title = info.get("title") or ""
                 description = info.get("description") or ""
-                uploader = info.get("uploader") or info.get("channel") or ""
-                uploader_id = info.get("uploader_id") or info.get("channel_id") or ""
-
-                # Создаем атрибуцию
-                attribution = ""
-                if uploader:
-                    # Используем uploader_id если есть, иначе uploader
-                    username = uploader_id if uploader_id else uploader
-                    # Убираем лишние символы и приводим к нижнему регистру для @
-                    username = re.sub(r"[^\w\-_.]", "", username.lower())
-                    if username:
-                        attribution = f"Video by @{username}"
 
                 # Объединяем title, description и атрибуцию
                 caption_parts = []
@@ -312,15 +302,11 @@ class BaseProvider(ABC):
                 if description and description != title:
                     # Добавляем описание только если оно отличается от заголовка
                     caption_parts.append(description)
-                if attribution:
-                    caption_parts.append(attribution)
 
                 caption = "\n\n".join(caption_parts)[:1024]
 
                 if caption:
                     logger.info(f"Caption preview: {caption[:80]}...")
-                    if attribution:
-                        logger.info(f"Video attribution: {attribution}")
 
                 return data, caption
 
