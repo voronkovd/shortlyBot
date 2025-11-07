@@ -20,7 +20,7 @@ class TestInstagramProvider:
     def test_valid_urls(self, provider):
         valid_urls = [
             "https://www.instagram.com/p/ABC123/",
-            "https://instagram.com/reel/XYZ789/",
+            "https://instagram.com/reels/XYZ789/",
             "https://www.instagram.com/tv/DEF456/",
             "https://instagram.com/p/ABC123/?utm_source=ig_web_copy_link",
         ]
@@ -43,7 +43,7 @@ class TestInstagramProvider:
     def test_extract_id(self, provider):
         test_cases = [
             ("https://www.instagram.com/p/ABC123/", ("post", "ABC123")),
-            ("https://instagram.com/reel/XYZ789/", ("reel", "XYZ789")),
+            ("https://instagram.com/reels/XYZ789/", ("reels", "XYZ789")),
             ("https://www.instagram.com/tv/DEF456/", ("tv", "DEF456")),
         ]
 
@@ -54,7 +54,8 @@ class TestInstagramProvider:
     def test_build_url(self, provider):
         test_cases = [
             (("post", "ABC123"), "https://www.instagram.com/p/ABC123/"),
-            (("reel", "XYZ789"), "https://www.instagram.com/reel/XYZ789/"),
+            (("reel", "XYZ789"), "https://www.instagram.com/reels/XYZ789/"),
+            (("reels", "XYZ789"), "https://www.instagram.com/reels/XYZ789/"),
             (("tv", "DEF456"), "https://www.instagram.com/tv/DEF456/"),
         ]
 

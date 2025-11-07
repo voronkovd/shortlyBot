@@ -43,6 +43,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 ⚠️ {t('help_limitations', user=user)}:
 {t('help_limitations_text', user=user)}
 
+ 👥 {t('help_groups', user=user)}:
+ {t('help_groups_text', user=user)}
+
 🆘 If you have problems:
 • Make sure the link is correct
 • Check that the account is public
@@ -51,6 +54,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 💡 {t('help_commands', user=user)}:
 {t('help_start', user=user)}
 {t('help_help', user=user)}
+{t('help_contact', user=user)}
     """
 
     await update.message.reply_text(help_text)

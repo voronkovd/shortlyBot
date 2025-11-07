@@ -148,7 +148,7 @@ class TestDownloader:
 
         assert video_data is None
         assert caption is None
-        assert platform is None
+        assert platform == "test"  # Платформа возвращается даже если видео не скачалось
 
     def test_download_video_string_ref(self, downloader):
         mock_provider = MockProvider(
@@ -166,3 +166,22 @@ class TestDownloader:
         assert video_data == b"video_data"
         assert caption == "caption"
         assert platform == "test"
+
+    def test_download_video_empty_platform_fallback(self, downloader):
+        """Тест проверяет, что при пустой платформе используется fallback из имени класса"""
+        mock_provider = MockProvider(
+            "",  # Пустая платформа
+            ["https://test.com/video/123"],
+            ("video", "123"),
+            (b"video_data", "caption"),
+        )
+        downloader.downloaders = [mock_provider]
+
+        url = "https://test.com/video/123"
+
+        video_data, caption, platform = downloader.download_video(url)
+
+        assert video_data == b"video_data"
+        assert caption == "caption"
+        # Должен использоваться fallback из имени класса (MockProvider -> mock)
+        assert platform == "mock"

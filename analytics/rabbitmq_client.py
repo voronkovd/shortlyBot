@@ -54,8 +54,9 @@ class RabbitMQClient:
         ch = conn.channel()
         try:
             ch.confirm_delivery()
-        except Exception:
-            pass
+        except Exception as e:
+            # confirm_delivery может быть недоступен в некоторых конфигурациях
+            logger.debug(f"Could not confirm delivery: {e}")
 
         # Объявляем exchange
         ch.exchange_declare(
@@ -101,8 +102,9 @@ class RabbitMQClient:
                     pass
                 if conn is not None and not getattr(conn, "is_closed", False):
                     conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                # Игнорируем ошибки при закрытии соединения
+                logger.debug(f"Error closing connection: {e}")
 
     def _publish_with_retries(self, routing_key: str, message: Dict[str, Any]) -> None:
         attempts = 0
