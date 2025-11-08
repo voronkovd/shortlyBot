@@ -9,6 +9,7 @@ class InstagramProvider(BaseProvider):
     PATTERNS = [
         ("post", r"instagram\.com/p/([^/]+)"),
         ("reels", r"instagram\.com/reels/([^/]+)"),
+        ("reel", r"instagram\.com/reel/([^/]+)"),
         ("tv", r"instagram\.com/tv/([^/]+)"),
         ("story", r"instagram\.com/stories/[^/]+/([^/]+)"),
     ]
