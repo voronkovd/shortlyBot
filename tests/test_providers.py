@@ -21,6 +21,7 @@ class TestInstagramProvider:
         valid_urls = [
             "https://www.instagram.com/p/ABC123/",
             "https://instagram.com/reels/XYZ789/",
+            "https://instagram.com/reel/XYZ789/",
             "https://www.instagram.com/tv/DEF456/",
             "https://instagram.com/p/ABC123/?utm_source=ig_web_copy_link",
         ]
@@ -44,6 +45,7 @@ class TestInstagramProvider:
         test_cases = [
             ("https://www.instagram.com/p/ABC123/", ("post", "ABC123")),
             ("https://instagram.com/reels/XYZ789/", ("reels", "XYZ789")),
+            ("https://instagram.com/reel/XYZ789/", ("reel", "XYZ789")),
             ("https://www.instagram.com/tv/DEF456/", ("tv", "DEF456")),
         ]
 
