@@ -177,7 +177,9 @@ class TestStatsCollector:
         result = stats_collector._get_display_username(12345, "")
         assert result == "user_12345"
 
-    def test_track_download_failure_unknown_platform(self, stats_collector, mock_rabbitmq_client):
+    def test_track_download_failure_unknown_platform(
+        self, stats_collector, mock_rabbitmq_client
+    ):
         """Тест что ошибки для неизвестных платформ игнорируются"""
         user_id = 12345
         username = "test_user"
@@ -194,16 +196,25 @@ class TestStatsCollector:
         mock_rabbitmq_client.send_provider_stats.assert_not_called()
         mock_rabbitmq_client.send_bot_event.assert_not_called()
 
-    def test_track_download_failure_known_platforms(self, stats_collector, mock_rabbitmq_client):
+    def test_track_download_failure_known_platforms(
+        self, stats_collector, mock_rabbitmq_client
+    ):
         """Тест что ошибки для всех известных платформ отслеживаются"""
-        known_platforms = ["instagram", "tiktok", "youtube", "likee", "facebook", "rutube"]
-        
+        known_platforms = [
+            "instagram",
+            "tiktok",
+            "youtube",
+            "likee",
+            "facebook",
+            "rutube",
+        ]
+
         for platform in known_platforms:
             mock_rabbitmq_client.reset_mock()
             stats_collector.track_download_failure(
                 12345, "test_user", platform, "Test error", 1.0
             )
-            
+
             # Для каждой известной платформы должны быть вызовы
             assert mock_rabbitmq_client.send_user_stats.call_count == 1
             assert mock_rabbitmq_client.send_provider_stats.call_count == 1
