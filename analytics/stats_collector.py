@@ -9,6 +9,16 @@ logger = logging.getLogger(__name__)
 
 class StatsCollector:
 
+    # Список известных платформ, для которых мы отслеживаем ошибки
+    KNOWN_PLATFORMS = {
+        "instagram",
+        "tiktok",
+        "youtube",
+        "likee",
+        "facebook",
+        "rutube",
+    }
+
     def __init__(self):
         self.rabbitmq = rabbitmq_client
 
@@ -79,6 +89,13 @@ class StatsCollector:
         error_message: str,
         processing_time: Optional[float] = None,
     ):
+        # Игнорируем ошибки для неизвестных платформ
+        if platform not in self.KNOWN_PLATFORMS:
+            logger.debug(
+                f"Skipping failure tracking for unknown platform: {platform} (user: {user_id})"
+            )
+            return
+
         try:
             # Создаем более информативный username
             display_username = self._get_display_username(user_id, username)
