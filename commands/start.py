@@ -26,6 +26,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 {t('start_likee', user=user)}
 {t('start_facebook', user=user)}
 {t('start_rutube', user=user)}
+{t('start_reddit', user=user)}
 
 🔗 {t('start_usage', user=user)}
 
