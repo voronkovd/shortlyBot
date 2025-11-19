@@ -29,4 +29,3 @@ class RedditProvider(BaseProvider):
         # yt-dlp поддерживает Reddit, можно передать полный URL
         # Используем формат с /comments/ для универсальности
         return f"https://www.reddit.com/comments/{ident}/"
-

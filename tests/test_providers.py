@@ -259,7 +259,10 @@ class TestRedditProvider:
 
     def test_extract_id(self, provider):
         test_cases = [
-            ("https://www.reddit.com/r/videos/comments/abc123/title/", ("post", "abc123")),
+            (
+                "https://www.reddit.com/r/videos/comments/abc123/title/",
+                ("post", "abc123"),
+            ),
             ("https://reddit.com/r/funny/comments/xyz789/", ("post", "xyz789")),
             ("https://www.reddit.com/comments/def456/", ("post", "def456")),
             ("https://redd.it/abc123", ("post", "abc123")),
