@@ -17,10 +17,17 @@ class StatsCollector:
         "likee",
         "facebook",
         "rutube",
+        "reddit",
     }
 
     def __init__(self):
         self.rabbitmq = rabbitmq_client
+
+    def _should_track_platform(self, platform: str) -> bool:
+        if platform in self.KNOWN_PLATFORMS:
+            return True
+        logger.debug(f"Skipping stats for unknown platform: {platform}")
+        return False
 
     def _get_display_username(self, user_id: int, username: str) -> str:
         """Создает более информативный username для отображения"""
@@ -29,6 +36,8 @@ class StatsCollector:
         return f"user_{user_id}"
 
     def track_user_request(self, user_id: int, username: str, platform: str):
+        if not self._should_track_platform(platform):
+            return
         try:
             # Создаем более информативный username
             display_username = self._get_display_username(user_id, username)
@@ -52,6 +61,8 @@ class StatsCollector:
         video_size: int,
         processing_time: float,
     ):
+        if not self._should_track_platform(platform):
+            return
         try:
             # Создаем более информативный username
             display_username = self._get_display_username(user_id, username)
@@ -90,10 +101,7 @@ class StatsCollector:
         processing_time: Optional[float] = None,
     ):
         # Игнорируем ошибки для неизвестных платформ
-        if platform not in self.KNOWN_PLATFORMS:
-            logger.debug(
-                f"Skipping failure tracking for unknown platform: {platform} (user: {user_id})"
-            )
+        if not self._should_track_platform(platform):
             return
 
         try:
@@ -133,6 +141,8 @@ class StatsCollector:
             logger.error(f"Failed to track download failure: {e}")
 
     def track_provider_attempt(self, platform: str):
+        if not self._should_track_platform(platform):
+            return
         try:
             self.rabbitmq.send_provider_stats(
                 platform=platform, action="download_attempt", success=True
