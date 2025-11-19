@@ -3,6 +3,7 @@ import pytest
 from providers.facebook import FacebookProvider
 from providers.instagram import InstagramProvider
 from providers.likee import LikeeProvider
+from providers.reddit import RedditProvider
 from providers.rutube import RuTubeProvider
 from providers.tiktok import TikTokProvider
 from providers.youtube import YouTubeProvider
@@ -216,6 +217,65 @@ class TestRuTubeProvider:
                 "https://rutube.ru/shorts/cea63c15281278af170cdaec2115cf87/",
             ),
             (("embed", "123456"), "https://rutube.ru/video/123456/"),
+        ]
+
+        for (kind, ident), expected in test_cases:
+            result = provider._build_url(kind, ident)
+            assert result == expected
+
+
+class TestRedditProvider:
+
+    @pytest.fixture
+    def provider(self):
+        return RedditProvider()
+
+    def test_platform_name(self, provider):
+        assert provider.platform == "reddit"
+
+    def test_valid_urls(self, provider):
+        valid_urls = [
+            "https://www.reddit.com/r/videos/comments/abc123/title/",
+            "https://reddit.com/r/funny/comments/xyz789/",
+            "https://www.reddit.com/comments/def456/",
+            "https://redd.it/abc123",
+            "https://www.reddit.com/r/videos/comments/abc123/title/?utm_source=share",
+        ]
+
+        for url in valid_urls:
+            assert provider.is_valid_url(url), f"URL should be valid: {url}"
+
+    def test_invalid_urls(self, provider):
+        invalid_urls = [
+            "https://www.youtube.com/watch?v=123",
+            "https://tiktok.com/@user/video/123",
+            "https://reddit.com/user/",
+            "not_a_url",
+            "",
+        ]
+
+        for url in invalid_urls:
+            assert not provider.is_valid_url(url), f"URL should be invalid: {url}"
+
+    def test_extract_id(self, provider):
+        test_cases = [
+            (
+                "https://www.reddit.com/r/videos/comments/abc123/title/",
+                ("post", "abc123"),
+            ),
+            ("https://reddit.com/r/funny/comments/xyz789/", ("post", "xyz789")),
+            ("https://www.reddit.com/comments/def456/", ("post", "def456")),
+            ("https://redd.it/abc123", ("post", "abc123")),
+        ]
+
+        for url, expected in test_cases:
+            result = provider.extract_id(url)
+            assert result == expected, f"Expected {expected}, got {result} for {url}"
+
+    def test_build_url(self, provider):
+        test_cases = [
+            (("post", "abc123"), "https://www.reddit.com/comments/abc123/"),
+            (("post", "xyz789"), "https://www.reddit.com/comments/xyz789/"),
         ]
 
         for (kind, ident), expected in test_cases:
