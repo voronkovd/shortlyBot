@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
+  pull-requests: write
 
 jobs:
   check-dependencies:
@@ -118,8 +119,14 @@ jobs:
   update-dependencies:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
@@ -158,3 +165,5 @@ jobs:
             - Please review changes and run tests.
           branch: update-dependencies
           delete-branch: true
+          push-to-fork: false
+          labels: dependencies,automated
