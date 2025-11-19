@@ -83,10 +83,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 or "unknown"
             )
 
-    # Отслеживаем запрос только в личных чатах
-    if not is_group:
-        stats_collector.track_user_request(user.id, user.username, platform)
-
     # В группах не показываем служебные сообщения
     processing_msg = None
     if not is_group:
@@ -98,8 +94,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if is_group:
         try:
             stats_collector.track_group_message(chat.id, chat.title or "", chat.type)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to track group message: {e}")
 
     try:
         # Общий таймаут на весь процесс: 5 минут
@@ -110,13 +106,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             if not video_data:
                 processing_time = time.time() - start_time
-                stats_collector.track_download_failure(
-                    user.id,
-                    user.username,
-                    platform or "unknown",
-                    "Video not found or unavailable",
-                    processing_time,
-                )
+                # Для групп используем chat.id, для приватных чатов - user.id
+                if is_group:
+                    stats_collector.track_download_failure(
+                        chat.id,
+                        chat.title or "",
+                        platform or "unknown",
+                        "Video not found or unavailable",
+                        processing_time,
+                    )
+                else:
+                    stats_collector.track_download_failure(
+                        user.id,
+                        user.username,
+                        platform or "unknown",
+                        "Video not found or unavailable",
+                        processing_time,
+                    )
                 # В группах не показываем ошибки
                 if not is_group and processing_msg:
                     await processing_msg.edit_text(
@@ -149,9 +155,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
 
             # Отслеживаем успешное скачивание
-            stats_collector.track_download_success(
-                user.id, user.username, platform, len(video_data), processing_time
-            )
+            # Для групп используем chat.id, для приватных чатов - user.id
+            if is_group:
+                stats_collector.track_download_success(
+                    chat.id,
+                    chat.title or "",
+                    platform,
+                    len(video_data),
+                    processing_time,
+                )
+            else:
+                stats_collector.track_download_success(
+                    user.id,
+                    user.username,
+                    platform,
+                    len(video_data),
+                    processing_time,
+                )
 
             # Удаляем сообщения только в личных чатах
             if not is_group:
@@ -177,18 +197,38 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except asyncio.TimeoutError:
         processing_time = time.time() - start_time
         logger.error(f"Timeout processing video for user {user.id}")
-        stats_collector.track_download_failure(
-            user.id, user.username, "unknown", "Processing timeout", processing_time
-        )
+        # Для групп используем chat.id, для приватных чатов - user.id
+        if is_group:
+            stats_collector.track_download_failure(
+                chat.id,
+                chat.title or "",
+                "unknown",
+                "Processing timeout",
+                processing_time,
+            )
+        else:
+            stats_collector.track_download_failure(
+                user.id,
+                user.username,
+                "unknown",
+                "Processing timeout",
+                processing_time,
+            )
         # В группах не показываем ошибки
         if not is_group and processing_msg:
             await processing_msg.edit_text(t("error_processing_timeout", user=user))
     except Exception as e:
         processing_time = time.time() - start_time
         logger.error(f"Error downloading video for user {user.id}: {e}")
-        stats_collector.track_download_failure(
-            user.id, user.username, "unknown", str(e), processing_time
-        )
+        # Для групп используем chat.id, для приватных чатов - user.id
+        if is_group:
+            stats_collector.track_download_failure(
+                chat.id, chat.title or "", "unknown", str(e), processing_time
+            )
+        else:
+            stats_collector.track_download_failure(
+                user.id, user.username, "unknown", str(e), processing_time
+            )
         # В группах не показываем ошибки
         if not is_group and processing_msg:
             await processing_msg.edit_text(t("error_unknown", user=user))
@@ -206,6 +246,7 @@ async def handle_my_chat_member(
         if not my:
             return
         chat = my.chat
+        user = update.effective_user
         # Бот добавлен или стал админом
         new_status = my.new_chat_member.status
         old_status = my.old_chat_member.status if my.old_chat_member else None
@@ -214,6 +255,8 @@ async def handle_my_chat_member(
         ):
             if chat.type in (Chat.GROUP, Chat.SUPERGROUP):
                 stats_collector.track_group_added(chat.id, chat.title or "", chat.type)
+            elif chat.type == Chat.PRIVATE and user:
+                stats_collector.track_user_added(user.id, user.username)
     except Exception as e:
         logger.warning(f"Failed to process my_chat_member: {e}")
 

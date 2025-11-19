@@ -40,6 +40,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 🔸 {t('help_rutube', user=user)}:
 {t('help_rutube_examples', user=user)}
 
+🔸 {t('help_reddit', user=user)}:
+{t('help_reddit_examples', user=user)}
+
 ⚠️ {t('help_limitations', user=user)}:
 {t('help_limitations_text', user=user)}
 

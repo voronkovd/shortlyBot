@@ -92,7 +92,8 @@ class TestStatsCollector:
 
         assert mock_rabbitmq_client.send_user_stats.call_count == 1
         assert mock_rabbitmq_client.send_provider_stats.call_count == 1
-        assert mock_rabbitmq_client.send_bot_event.call_count == 1
+        # Больше не отправляем download_error в bot_event
+        mock_rabbitmq_client.send_bot_event.assert_not_called()
 
         user_stats_call = mock_rabbitmq_client.send_user_stats.call_args
         assert user_stats_call[1]["action"] == "download_failed"
@@ -102,14 +103,6 @@ class TestStatsCollector:
         assert provider_stats_call[1]["action"] == "download_failed"
         assert not provider_stats_call[1]["success"]
         assert provider_stats_call[1]["processing_time"] == processing_time
-
-        bot_event_call = mock_rabbitmq_client.send_bot_event.call_args
-        assert bot_event_call[0][0] == "download_error"
-        event_data = bot_event_call[0][1]
-        assert event_data["user_id"] == user_id
-        assert event_data["platform"] == platform
-        assert event_data["error"] == error_message
-        assert event_data["processing_time"] == processing_time
 
     def test_track_download_failure_no_processing_time(
         self, stats_collector, mock_rabbitmq_client
@@ -126,9 +119,8 @@ class TestStatsCollector:
         provider_stats_call = mock_rabbitmq_client.send_provider_stats.call_args
         assert provider_stats_call[1]["processing_time"] is None
 
-        bot_event_call = mock_rabbitmq_client.send_bot_event.call_args
-        event_data = bot_event_call[0][1]
-        assert event_data["processing_time"] is None
+        # Больше не отправляем download_error в bot_event
+        mock_rabbitmq_client.send_bot_event.assert_not_called()
 
     def test_track_provider_attempt(self, stats_collector, mock_rabbitmq_client):
         platform = "facebook"
@@ -168,20 +160,16 @@ class TestStatsCollector:
         mock_rabbitmq_client.send_provider_stats.assert_not_called()
 
     def test_track_bot_start(self, stats_collector, mock_rabbitmq_client):
-        with patch("analytics.stats_collector.time.time", return_value=1234567890.0):
-            stats_collector.track_bot_start()
+        stats_collector.track_bot_start()
 
-        mock_rabbitmq_client.send_bot_event.assert_called_once_with(
-            "bot_started", {"timestamp": 1234567890.0}
-        )
+        # Больше не отправляем bot_started в bot_event
+        mock_rabbitmq_client.send_bot_event.assert_not_called()
 
     def test_track_bot_stop(self, stats_collector, mock_rabbitmq_client):
-        with patch("analytics.stats_collector.time.time", return_value=1234567890.0):
-            stats_collector.track_bot_stop()
+        stats_collector.track_bot_stop()
 
-        mock_rabbitmq_client.send_bot_event.assert_called_once_with(
-            "bot_stopped", {"timestamp": 1234567890.0}
-        )
+        # Больше не отправляем bot_stopped в bot_event
+        mock_rabbitmq_client.send_bot_event.assert_not_called()
 
     def test_exception_handling(self, stats_collector, mock_rabbitmq_client):
         mock_rabbitmq_client.send_user_stats.side_effect = Exception("RabbitMQ error")
@@ -247,4 +235,45 @@ class TestStatsCollector:
             # Для каждой известной платформы должны быть вызовы
             assert mock_rabbitmq_client.send_user_stats.call_count == 1
             assert mock_rabbitmq_client.send_provider_stats.call_count == 1
-            assert mock_rabbitmq_client.send_bot_event.call_count == 1
+            # Больше не отправляем download_error в bot_event
+            mock_rabbitmq_client.send_bot_event.assert_not_called()
+
+    def test_track_group_added(self, stats_collector, mock_rabbitmq_client):
+        chat_id = 12345
+        title = "Test Group"
+        chat_type = "group"
+
+        stats_collector.track_group_added(chat_id, title, chat_type)
+
+        mock_rabbitmq_client.send_bot_event.assert_called_once_with(
+            "group_added",
+            {
+                "chat_id": chat_id,
+                "title": title,
+                "chat_type": chat_type,
+            },
+        )
+
+    def test_track_group_message(self, stats_collector, mock_rabbitmq_client):
+        chat_id = 12345
+        title = "Test Group"
+        chat_type = "group"
+
+        stats_collector.track_group_message(chat_id, title, chat_type)
+
+        # Больше не отправляем group_message в bot_event
+        mock_rabbitmq_client.send_bot_event.assert_not_called()
+
+    def test_track_user_added(self, stats_collector, mock_rabbitmq_client):
+        user_id = 12345
+        username = "test_user"
+
+        stats_collector.track_user_added(user_id, username)
+
+        mock_rabbitmq_client.send_bot_event.assert_called_once_with(
+            "user_added",
+            {
+                "user_id": user_id,
+                "username": username,
+            },
+        )

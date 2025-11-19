@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Optional
 
 from .rabbitmq_client import rabbitmq_client
@@ -123,16 +122,6 @@ class StatsCollector:
                 processing_time=processing_time,
             )
 
-            self.rabbitmq.send_bot_event(
-                "download_error",
-                {
-                    "user_id": user_id,
-                    "platform": platform,
-                    "error": error_message,
-                    "processing_time": processing_time,
-                },
-            )
-
             logger.info(
                 f"Tracked failed download: {user_id} from {platform}, error: {error_message}"
             )
@@ -153,14 +142,14 @@ class StatsCollector:
 
     def track_bot_start(self):
         try:
-            self.rabbitmq.send_bot_event("bot_started", {"timestamp": time.time()})
+            # Больше не отправляем событие в bot_event
             logger.info("Tracked bot start")
         except Exception as e:
             logger.error(f"Failed to track bot start: {e}")
 
     def track_bot_stop(self):
         try:
-            self.rabbitmq.send_bot_event("bot_stopped", {"timestamp": time.time()})
+            # Больше не отправляем событие в bot_event
             logger.info("Tracked bot stop")
         except Exception as e:
             logger.error(f"Failed to track bot stop: {e}")
@@ -181,17 +170,23 @@ class StatsCollector:
 
     def track_group_message(self, chat_id: int, title: str, chat_type: str):
         try:
-            self.rabbitmq.send_bot_event(
-                "group_message",
-                {
-                    "chat_id": chat_id,
-                    "title": title,
-                    "chat_type": chat_type,
-                },
-            )
+            # Больше не отправляем событие в bot_event
             logger.debug(f"Tracked group message: {chat_id} ({title})")
         except Exception as e:
             logger.error(f"Failed to track group message: {e}")
+
+    def track_user_added(self, user_id: int, username: str):
+        try:
+            self.rabbitmq.send_bot_event(
+                "user_added",
+                {
+                    "user_id": user_id,
+                    "username": username,
+                },
+            )
+            logger.info(f"Tracked user added: {user_id} (@{username})")
+        except Exception as e:
+            logger.error(f"Failed to track user added: {e}")
 
 
 stats_collector = StatsCollector()
