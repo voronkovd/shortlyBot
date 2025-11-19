@@ -139,6 +139,34 @@ class TestStatsCollector:
             platform=platform, action="download_attempt", success=True
         )
 
+    def test_track_user_request_unknown_platform(
+        self, stats_collector, mock_rabbitmq_client
+    ):
+        stats_collector.track_user_request(12345, "test_user", "unknown")
+
+        mock_rabbitmq_client.send_user_stats.assert_not_called()
+
+    def test_track_download_success_unknown_platform(
+        self, stats_collector, mock_rabbitmq_client
+    ):
+        stats_collector.track_download_success(
+            12345,
+            "test_user",
+            "unknown",
+            video_size=1024,
+            processing_time=1.5,
+        )
+
+        mock_rabbitmq_client.send_user_stats.assert_not_called()
+        mock_rabbitmq_client.send_provider_stats.assert_not_called()
+
+    def test_track_provider_attempt_unknown_platform(
+        self, stats_collector, mock_rabbitmq_client
+    ):
+        stats_collector.track_provider_attempt("unknown")
+
+        mock_rabbitmq_client.send_provider_stats.assert_not_called()
+
     def test_track_bot_start(self, stats_collector, mock_rabbitmq_client):
         with patch("analytics.stats_collector.time.time", return_value=1234567890.0):
             stats_collector.track_bot_start()
@@ -207,6 +235,7 @@ class TestStatsCollector:
             "likee",
             "facebook",
             "rutube",
+            "reddit",
         ]
 
         for platform in known_platforms:

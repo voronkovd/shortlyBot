@@ -83,8 +83,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 or "unknown"
             )
 
-    # Отслеживаем запрос пользователя
-    stats_collector.track_user_request(user.id, user.username, platform)
+    # Отслеживаем запрос только в личных чатах
+    if not is_group:
+        stats_collector.track_user_request(user.id, user.username, platform)
 
     # В группах не показываем служебные сообщения
     processing_msg = None

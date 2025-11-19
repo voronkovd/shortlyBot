@@ -1,32 +1,38 @@
 services:
   bot:
-    build: .
+    image: ghcr.io/voronkovd/shortlybot:latest
     container_name: shortlybot_bot
     environment:
-      # RabbitMQ Configuration
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER:-admin}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-password123}
-      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
-      # Telegram Bot Token (должен быть установлен в .env файле)
+      RMQ_HEARTBEAT: "120"
+      RMQ_PUBLISH_RETRIES: "5"
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+
+      YTDLP_COOKIES_FILE: /secrets/yt_cookies.txt
+      TZ: Europe/Amsterdam
+    volumes:
+      - ./secrets/yt_cookies.txt:/secrets/yt_cookies.txt:ro
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=60
+      - net.ipv4.tcp_keepalive_intvl=10
+      - net.ipv4.tcp_keepalive_probes=3
     networks:
       - shortlybot
-    # depends_on:
-    #   rabbitmq:
-    #     condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe')"]
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import os,urllib.request,json,sys; d=json.load(urllib.request.urlopen('https://api.telegram.org/bot'+os.environ.get('TELEGRAM_BOT_TOKEN','')+'/getMe',timeout=5)); sys.exit(0 if d.get('ok') else 1)\""
+        ]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
-
-volumes:
-  rabbitmq_data:
-    driver: local
+      retries: 5
+      start_period: 15s
 
 networks:
   shortlybot:
