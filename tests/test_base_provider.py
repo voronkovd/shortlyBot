@@ -1,3 +1,4 @@
+import os
 import re
 import tempfile
 from unittest.mock import Mock, patch
@@ -119,7 +120,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -166,7 +167,7 @@ class TestBaseProvider:
         mock_info = {"title": "Test Video"}
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -189,7 +190,7 @@ class TestBaseProvider:
 
         mock_ydl.download.side_effect = [Exception("Format error"), None]
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -216,7 +217,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -243,7 +244,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -268,7 +269,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -294,7 +295,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -320,7 +321,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -344,7 +345,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):
@@ -372,7 +373,7 @@ class TestBaseProvider:
         }
         mock_ydl.extract_info.return_value = mock_info
 
-        mock_glob.return_value = ["/tmp/test_video.mp4"]
+        mock_glob.return_value = [os.path.join(tempfile.gettempdir(), "test_video.mp4")]
         mock_getsize.return_value = 1024000
 
         with patch("builtins.open", mock_open_with_content(b"video_data")):

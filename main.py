@@ -94,8 +94,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if is_group:
         try:
             stats_collector.track_group_message(chat.id, chat.title or "", chat.type)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to track group message: {e}")
 
     try:
         # Общий таймаут на весь процесс: 5 минут
