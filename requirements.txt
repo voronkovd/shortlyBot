@@ -54,5 +54,5 @@ typing-extensions==4.15.0
     # via
     #   anyio
     #   pytest-asyncio
-yt-dlp==2025.12.8
+yt-dlp==2026.2.21
     # via -r requirements.in
