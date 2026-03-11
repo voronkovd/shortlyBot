@@ -271,7 +271,6 @@ class BaseProvider(ABC):
                     f"📁 Selected file: {os.path.basename(video_file)} ({human(size)})"
                 )
 
-                # --- условное сжатие ---
                 max_size_mb = int(os.getenv("MAX_SIZE_MB", "50"))
                 target_bytes = max_size_mb * 1024 * 1024
                 max_height = int(os.getenv("MAX_HEIGHT", "1080"))
@@ -297,16 +296,13 @@ class BaseProvider(ABC):
                 final_size = len(data)
                 logger.info(f"✅ Final size: {human(final_size)}")
 
-                # Формируем caption с атрибуцией
                 title = info.get("title") or ""
                 description = info.get("description") or ""
 
-                # Объединяем title, description и атрибуцию
                 caption_parts = []
                 if title:
                     caption_parts.append(title)
                 if description and description != title:
-                    # Добавляем описание только если оно отличается от заголовка
                     caption_parts.append(description)
 
                 caption = "\n\n".join(caption_parts)[:1024]
@@ -323,10 +319,6 @@ class BaseProvider(ABC):
     def download_media(
         self, ref: Union[str, KindId]
     ) -> Tuple[List[MediaItem], Optional[str]]:
-        """
-        Базовая реализация: оборачивает результат download_video в один элемент списка.
-        Платформы, которые умеют фото/карусели, могут переопределить этот метод.
-        """
         video_data, caption = self.download_video(ref)
         if not video_data:
             return [], caption
