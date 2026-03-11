@@ -6,3 +6,5 @@ pytest-mock
 python-dotenv
 python-telegram-bot
 yt-dlp
+gallery-dl
+

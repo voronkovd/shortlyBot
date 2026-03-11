@@ -56,3 +56,6 @@ typing-extensions==4.15.0
     #   pytest-asyncio
 yt-dlp==2026.2.21
     # via -r requirements.in
+
+gallery-dl==1.31.9
+    # via -r requirements.in
