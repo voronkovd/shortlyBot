@@ -130,15 +130,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if not is_group and processing_msg:
                 await processing_msg.edit_text(t("sending_video", user=user))
 
-            if caption and len(caption) > 1024:
-                caption = caption[:1021] + "..."
+            if caption and len(caption) > 4096:
+                caption = caption[:4093] + "..."
 
             if len(media_items) == 1:
                 item = media_items[0]
                 if item["kind"] == "photo":
                     await update.message.reply_photo(
                         photo=item["data"],
-                        caption=caption,
                         read_timeout=120,
                         write_timeout=120,
                         connect_timeout=30,
@@ -148,7 +147,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     filename = item.get("filename") or f"{platform}_video.mp4"
                     await update.message.reply_video(
                         video=item["data"],
-                        caption=caption,
                         filename=filename,
                         read_timeout=120,
                         write_timeout=120,
@@ -156,8 +154,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         pool_timeout=30,
                     )
             else:
-                # Telegram ограничивает размер альбома 10 медиа.
-                # Если картинок больше, шлём несколько альбомов подряд (по 10 штук).
                 MAX_MEDIA_GROUP = 10
                 total = len(media_items)
                 group_index = 0
@@ -189,6 +185,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         pool_timeout=30,
                     )
                     group_index += 1
+
+            if caption:
+                await update.message.reply_text(caption)
 
             if is_group:
                 stats_collector.track_download_success(
