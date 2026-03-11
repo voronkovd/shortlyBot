@@ -157,13 +157,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 media_group = []
                 for item in media_items:
                     if item["kind"] == "photo":
-                        media_group.append(
-                            InputMediaPhoto(media=item["data"])
-                        )
+                        media_group.append(InputMediaPhoto(media=item["data"]))
                     else:
-                        media_group.append(
-                            InputMediaVideo(media=item["data"])
-                        )
+                        media_group.append(InputMediaVideo(media=item["data"]))
 
                 await update.message.reply_media_group(
                     media=media_group,
