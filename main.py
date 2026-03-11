@@ -4,7 +4,7 @@ import logging
 import os
 import time
 
-from telegram import Chat, Update
+from telegram import Chat, InputMediaPhoto, InputMediaVideo, Update
 from telegram.ext import (
     Application,
     ChatMemberHandler,
@@ -63,34 +63,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user = update.effective_user
     chat = update.effective_chat
     message_text = update.message.text
-
-    # Определяем, является ли чат группой или супергруппой
     is_group = chat.type in (Chat.GROUP, Chat.SUPERGROUP)
 
     logger.info(
         f"📨 Received message from user {user.id} (@{user.username}) in {'group' if is_group else 'private'} chat: {message_text}"
     )
 
-    # Определяем платформу из URL
     platform = "unknown"
     downloader_provider = downloader.get_downloader(message_text)
     if downloader_provider:
         platform = getattr(downloader_provider, "platform", "unknown")
-        # Если platform пустая строка, используем fallback
         if not platform:
             platform = (
                 downloader_provider.__class__.__name__.replace("Provider", "").lower()
                 or "unknown"
             )
 
-    # В группах не показываем служебные сообщения
     processing_msg = None
     if not is_group:
         processing_msg = await update.message.reply_text(
             t("processing_video", user=user)
         )
 
-    # Считаем группу «подписчиком» при любой активности
     if is_group:
         try:
             stats_collector.track_group_message(chat.id, chat.title or "", chat.type)
@@ -98,21 +92,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.debug(f"Failed to track group message: {e}")
 
     try:
-        # Общий таймаут на весь процесс: 5 минут
         start_time = time.time()
 
         async def process_video():
-            video_data, caption, platform = downloader.download_video(message_text)
+            media_items, caption, platform = downloader.download_media(message_text)
 
-            if not video_data:
+            if not media_items:
                 processing_time = time.time() - start_time
-                # Для групп используем chat.id, для приватных чатов - user.id
                 if is_group:
                     stats_collector.track_download_failure(
                         chat.id,
                         chat.title or "",
                         platform or "unknown",
-                        "Video not found or unavailable",
+                        "Media not found or unavailable",
                         processing_time,
                     )
                 else:
@@ -120,10 +112,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         user.id,
                         user.username,
                         platform or "unknown",
-                        "Video not found or unavailable",
+                        "Media not found or unavailable",
                         processing_time,
                     )
-                # В группах не показываем ошибки
                 if not is_group and processing_msg:
                     await processing_msg.edit_text(
                         t("error_video_not_found", user=user)
@@ -131,37 +122,72 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return
 
             processing_time = time.time() - start_time
+            total_size = sum(len(item["data"]) for item in media_items)
             logger.info(
-                f"Video successfully downloaded from {platform} for user {user.id}, size: {len(video_data)} bytes"
+                f"Media successfully downloaded from {platform} for user {user.id}, total size: {total_size} bytes"
             )
 
-            # В группах не показываем сообщение "Отправляю видео..."
             if not is_group and processing_msg:
                 await processing_msg.edit_text(t("sending_video", user=user))
 
             if caption and len(caption) > 1024:
                 caption = caption[:1021] + "..."
 
-            filename = f"{platform}_video.mp4"
+            if len(media_items) == 1:
+                item = media_items[0]
+                if item["kind"] == "photo":
+                    await update.message.reply_photo(
+                        photo=item["data"],
+                        caption=caption,
+                        read_timeout=120,
+                        write_timeout=120,
+                        connect_timeout=30,
+                        pool_timeout=30,
+                    )
+                else:
+                    filename = item.get("filename") or f"{platform}_video.mp4"
+                    await update.message.reply_video(
+                        video=item["data"],
+                        caption=caption,
+                        filename=filename,
+                        read_timeout=120,
+                        write_timeout=120,
+                        connect_timeout=30,
+                        pool_timeout=30,
+                    )
+            else:
+                media_group = []
+                for idx, item in enumerate(media_items):
+                    media_caption = caption if idx == 0 else None
+                    if item["kind"] == "photo":
+                        media_group.append(
+                            InputMediaPhoto(
+                                media=item["data"],
+                                caption=media_caption,
+                            )
+                        )
+                    else:
+                        media_group.append(
+                            InputMediaVideo(
+                                media=item["data"],
+                                caption=media_caption,
+                            )
+                        )
 
-            await update.message.reply_video(
-                video=video_data,
-                caption=caption,
-                filename=filename,
-                read_timeout=120,  # 2 минуты на чтение
-                write_timeout=120,  # 2 минуты на запись
-                connect_timeout=30,  # 30 секунд на подключение
-                pool_timeout=30,  # 30 секунд на получение соединения из пула
-            )
+                await update.message.reply_media_group(
+                    media=media_group,
+                    read_timeout=120,
+                    write_timeout=120,
+                    connect_timeout=30,
+                    pool_timeout=30,
+                )
 
-            # Отслеживаем успешное скачивание
-            # Для групп используем chat.id, для приватных чатов - user.id
             if is_group:
                 stats_collector.track_download_success(
                     chat.id,
                     chat.title or "",
                     platform,
-                    len(video_data),
+                    total_size,
                     processing_time,
                 )
             else:
@@ -169,35 +195,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     user.id,
                     user.username,
                     platform,
-                    len(video_data),
+                    total_size,
                     processing_time,
                 )
 
-            # Удаляем сообщения только в личных чатах
             if not is_group:
-                try:
-                    # Удаляем исходное сообщение с ссылкой
-                    await update.message.delete()
-                    logger.info(f"Original message deleted for user {user.id}")
-
-                    # Удаляем сообщение "Отправляю видео..."
-                    if processing_msg:
+                if processing_msg:
+                    try:
                         await processing_msg.delete()
                         logger.info(f"Processing message deleted for user {user.id}")
+                    except Exception as delete_error:
+                        logger.warning(
+                            f"Failed to delete processing message for user {user.id}: {delete_error}"
+                        )
+                try:
+                    await update.message.delete()
+                    logger.info(f"Original message deleted for user {user.id}")
                 except Exception as delete_error:
                     logger.warning(
-                        f"Failed to delete messages for user {user.id}: {delete_error}"
+                        f"Failed to delete original message for user {user.id}: {delete_error}"
                     )
 
-            logger.info(f"Video successfully sent to user {user.id}")
+            logger.info(f"Media successfully sent to user {user.id}")
 
-        # Выполняем с общим таймаутом 5 минут
         await asyncio.wait_for(process_video(), timeout=300)
 
     except asyncio.TimeoutError:
         processing_time = time.time() - start_time
         logger.error(f"Timeout processing video for user {user.id}")
-        # Для групп используем chat.id, для приватных чатов - user.id
         if is_group:
             stats_collector.track_download_failure(
                 chat.id,
@@ -214,13 +239,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "Processing timeout",
                 processing_time,
             )
-        # В группах не показываем ошибки
         if not is_group and processing_msg:
             await processing_msg.edit_text(t("error_processing_timeout", user=user))
     except Exception as e:
         processing_time = time.time() - start_time
         logger.error(f"Error downloading video for user {user.id}: {e}")
-        # Для групп используем chat.id, для приватных чатов - user.id
         if is_group:
             stats_collector.track_download_failure(
                 chat.id, chat.title or "", "unknown", str(e), processing_time
@@ -229,7 +252,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             stats_collector.track_download_failure(
                 user.id, user.username, "unknown", str(e), processing_time
             )
-        # В группах не показываем ошибки
         if not is_group and processing_msg:
             await processing_msg.edit_text(t("error_unknown", user=user))
 
@@ -247,7 +269,6 @@ async def handle_my_chat_member(
             return
         chat = my.chat
         user = update.effective_user
-        # Бот добавлен или стал админом
         new_status = my.new_chat_member.status
         old_status = my.old_chat_member.status if my.old_chat_member else None
         if new_status in ("member", "administrator") and (
@@ -264,7 +285,6 @@ async def handle_my_chat_member(
 def main() -> None:
     logger.info("Starting Telegram Video Downloader Bot")
 
-    # Отслеживаем запуск бота
     stats_collector.track_bot_start()
 
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -289,7 +309,6 @@ def main() -> None:
     except Exception as e:
         logger.error(f"Bot stopped with error: {e}")
     finally:
-        # Отслеживаем остановку бота
         stats_collector.track_bot_stop()
 
 

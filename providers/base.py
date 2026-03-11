@@ -6,13 +6,19 @@ import shutil
 import subprocess  # nosec B404 - используется для вызова ffmpeg, безопасно
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import yt_dlp
 
 logger = logging.getLogger(__name__)
 
 KindId = Tuple[str, str]
+
+
+class MediaItem(TypedDict):
+    kind: str  # "video" или "photo"
+    filename: str
+    data: bytes
 
 
 def human(n: int) -> str:
@@ -313,3 +319,26 @@ class BaseProvider(ABC):
             except Exception as e:
                 logger.error(f"yt-dlp error: {e}")
                 raise
+
+    def download_media(
+        self, ref: Union[str, KindId]
+    ) -> Tuple[List[MediaItem], Optional[str]]:
+        """
+        Базовая реализация: оборачивает результат download_video в один элемент списка.
+        Платформы, которые умеют фото/карусели, могут переопределить этот метод.
+        """
+        video_data, caption = self.download_video(ref)
+        if not video_data:
+            return [], caption
+
+        filename = f"{self.platform or 'video'}_video.mp4"
+        return (
+            [
+                {
+                    "kind": "video",
+                    "filename": filename,
+                    "data": video_data,
+                }
+            ],
+            caption,
+        )
