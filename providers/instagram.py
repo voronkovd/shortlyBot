@@ -116,7 +116,6 @@ class InstagramProvider(BaseProvider):
             if not media_items:
                 raise RuntimeError("No readable Instagram photos after gallery-dl")
 
-            # Пробуем достать description из первого .json файла, если он есть
             caption: Optional[str] = None
             meta_files = glob.glob(os.path.join(temp_dir, "*.json"))
             if meta_files:

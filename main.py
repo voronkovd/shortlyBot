@@ -156,31 +156,39 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         pool_timeout=30,
                     )
             else:
-                media_group = []
-                for idx, item in enumerate(media_items):
-                    media_caption = caption if idx == 0 else None
-                    if item["kind"] == "photo":
-                        media_group.append(
-                            InputMediaPhoto(
-                                media=item["data"],
-                                caption=media_caption,
+                # Telegram ограничивает размер альбома 10 медиа.
+                # Если картинок больше, шлём несколько альбомов подряд (по 10 штук).
+                MAX_MEDIA_GROUP = 10
+                total = len(media_items)
+                group_index = 0
+                for start in range(0, total, MAX_MEDIA_GROUP):
+                    chunk = media_items[start : start + MAX_MEDIA_GROUP]
+                    media_group = []
+                    for idx, item in enumerate(chunk):
+                        media_caption = caption if (group_index == 0 and idx == 0) else None
+                        if item["kind"] == "photo":
+                            media_group.append(
+                                InputMediaPhoto(
+                                    media=item["data"],
+                                    caption=media_caption,
+                                )
                             )
-                        )
-                    else:
-                        media_group.append(
-                            InputMediaVideo(
-                                media=item["data"],
-                                caption=media_caption,
+                        else:
+                            media_group.append(
+                                InputMediaVideo(
+                                    media=item["data"],
+                                    caption=media_caption,
+                                )
                             )
-                        )
 
-                await update.message.reply_media_group(
-                    media=media_group,
-                    read_timeout=120,
-                    write_timeout=120,
-                    connect_timeout=30,
-                    pool_timeout=30,
-                )
+                    await update.message.reply_media_group(
+                        media=media_group,
+                        read_timeout=120,
+                        write_timeout=120,
+                        connect_timeout=30,
+                        pool_timeout=30,
+                    )
+                    group_index += 1
 
             if is_group:
                 stats_collector.track_download_success(
