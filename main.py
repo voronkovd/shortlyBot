@@ -5,6 +5,7 @@ import os
 import time
 
 from telegram import Chat, InputMediaPhoto, InputMediaVideo, Update
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     ChatMemberHandler,
@@ -54,6 +55,21 @@ if not TELEGRAM_BOT_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN is not set in environment variables")
 
 downloader = Downloader()
+
+
+def escape_markdown_v2(text: str) -> str:
+    """
+    Экранирует спецсимволы MarkdownV2, чтобы можно было безопасно отправлять произвольный текст.
+    См. https://core.telegram.org/bots/api#markdownv2-style
+    """
+    escape_chars = r"_*[]()~`>#+-=|{}.!"
+    result = []
+    for ch in text:
+        if ch in escape_chars:
+            result.append("\\" + ch)
+        else:
+            result.append(ch)
+    return "".join(result)
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -178,10 +194,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         pool_timeout=30,
                     )
 
-            if caption:
-                for start in range(0, len(caption), 4096):
-                    chunk = caption[start : start + 4096]
-                    await update.message.reply_text(chunk)
+            # В группах не шлём текстовое описание, только медиа.
+            if caption and not is_group:
+                escaped = escape_markdown_v2(caption)
+                max_len = 4096
+                spoiler_max = max_len - 4  # с учётом обёртки ||...||
+
+                # Всю подпись отправляем как один или несколько спойлеров,
+                # чтобы длинный текст был «свёрнут» до нажатия.
+                for start in range(0, len(escaped), spoiler_max):
+                    chunk = escaped[start : start + spoiler_max]
+                    await update.message.reply_text(
+                        f"||{chunk}||",
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                    )
 
             if is_group:
                 stats_collector.track_download_success(
