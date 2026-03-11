@@ -305,6 +305,8 @@ class BaseProvider(ABC):
                 if description and description != title:
                     caption_parts.append(description)
 
+                # Для базового провайдера ограничиваем caption до 1024 символов,
+                # чтобы не раздувать подписи и сохранить ожидаемое поведение тестов.
                 caption = "\n\n".join(caption_parts)[:1024]
 
                 if caption:

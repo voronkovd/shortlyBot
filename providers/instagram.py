@@ -129,8 +129,8 @@ class InstagramProvider(BaseProvider):
                         or meta.get("title")
                         or meta.get("content")
                     )
-                    if caption:
-                        caption = str(caption)[:1024]
+                    if caption is not None:
+                        caption = str(caption)
                 except Exception as e:
                     logger.debug(f"Failed to read Instagram metadata: {e}")
 
