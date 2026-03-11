@@ -305,7 +305,7 @@ class BaseProvider(ABC):
                 if description and description != title:
                     caption_parts.append(description)
 
-                caption = "\n\n".join(caption_parts)[:1024]
+                caption = "\n\n".join(caption_parts)
 
                 if caption:
                     logger.info(f"Caption preview: {caption[:80]}...")
