@@ -10,8 +10,13 @@ certifi==2026.1.4
     # via
     #   httpcore
     #   httpx
+    #   requests
+charset-normalizer==3.4.7
+    # via requests
 coverage[toml]==7.13.4
     # via pytest-cov
+gallery-dl==1.31.9
+    # via -r requirements.in
 h11==0.16.0
     # via httpcore
 httpcore==1.0.9
@@ -22,6 +27,7 @@ idna==3.11
     # via
     #   anyio
     #   httpx
+    #   requests
 iniconfig==2.3.0
     # via pytest
 packaging==26.0
@@ -34,7 +40,7 @@ pluggy==1.6.0
     #   pytest-cov
 pygments==2.19.2
     # via pytest
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   -r requirements.in
     #   pytest-asyncio
@@ -50,12 +56,13 @@ python-dotenv==1.2.1
     # via -r requirements.in
 python-telegram-bot==22.6
     # via -r requirements.in
+requests==2.33.1
+    # via gallery-dl
 typing-extensions==4.15.0
     # via
     #   anyio
     #   pytest-asyncio
+urllib3==2.6.3
+    # via requests
 yt-dlp==2026.2.21
-    # via -r requirements.in
-
-gallery-dl==1.31.9
     # via -r requirements.in
