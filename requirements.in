@@ -5,6 +5,6 @@ pytest-cov
 pytest-mock
 python-dotenv
 python-telegram-bot
-yt-dlp
+yt-dlp[default]
 gallery-dl
 
