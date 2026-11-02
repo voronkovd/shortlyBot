@@ -1,6 +1,9 @@
 # Используем официальный Python образ
 FROM python:3.13-slim
 
+# JavaScript runtime required by yt-dlp's YouTube challenge solver.
+COPY --from=denoland/deno:bin-2.9.8 /deno /usr/local/bin/deno
+
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
